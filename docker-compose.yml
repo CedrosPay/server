@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # Cedros Pay Server
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME:-$(date -u '+%Y-%m-%d_%H:%M:%S')}
+    image: cedrospay-server:${VERSION:-latest}
+    container_name: cedrospay-server
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      # Server configuration
+      - GO_ENV=${GO_ENV:-production}
+      - PORT=8080
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+      # x402 Configuration
+      - X402_SERVER_WALLET_1=${X402_SERVER_WALLET_1}
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL:-https://api.mainnet-beta.solana.com}
+
+      # Stripe Configuration
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+
+      # Database Configuration (if using)
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:?set POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-cedros_pay}
+
+      # MongoDB Configuration (if using)
+      - MONGODB_URI=${MONGODB_URI}
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/cedros-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - cedros-network
+
+  # PostgreSQL Database (optional - comment out if not using)
+  postgres:
+    image: postgres:16-alpine
+    container_name: cedros-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:?set POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-cedros_pay}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    # Expose Postgres only on the private compose network by default. Add a
+    # bind mount in an override file if external access is explicitly needed.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cedros}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cedros-network
+
+# Volumes for data persistence
+volumes:
+  postgres-data:
+    driver: local
+
+# Network for service communication
+networks:
+  cedros-network:
+    driver: bridge

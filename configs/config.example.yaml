@@ -1,0 +1,439 @@
+## Example configuration with detailed comments.
+## Copy this file to configs/local.yaml (gitignored) and replace placeholders before running.
+##
+## ENVIRONMENT VARIABLE OVERRIDES
+## ==============================
+## All configuration fields can be overridden via environment variables.
+## Environment variables take precedence over YAML configuration.
+##
+## Naming Convention:
+## - Standard names: SECTION_FIELD (e.g., SERVER_ADDRESS, STRIPE_SECRET_KEY)
+## - CEDROS-prefixed: CEDROS_SECTION_FIELD (e.g., CEDROS_SERVER_ADDRESS, CEDROS_STRIPE_SECRET_KEY)
+## - Both formats are supported; CEDROS_ prefix is checked first
+##
+## Examples:
+##   export CEDROS_SERVER_ADDRESS=":3000"
+##   export CEDROS_X402_RPC_URL="https://custom-rpc.solana.com"
+##   export CEDROS_PAYWALL_QUOTE_TTL="120s"
+##   export STRIPE_SECRET_KEY="sk_live_..."  # No CEDROS_ prefix also works
+##
+## For complete env var reference, see: docs/ENVIRONMENT_VARIABLES.md
+
+server:
+  address: ":8080" # Preferred listen address for the standalone server (":8080" = all interfaces)
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  cors_allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:6006"
+  route_prefix: "" # Optional: prefix all routes (e.g., "/api" makes routes like "/api/health", "/api/metrics"). Can be used to avoid route conflicts.
+
+  # Prometheus Metrics Configuration
+  # Metrics endpoint: GET /metrics (or /{route_prefix}/metrics if prefix is set)
+  # Metrics include: payment counts, amounts, durations, settlement times, RPC calls, webhooks, rate limits, database queries
+
+  # SECURITY: Admin Metrics API Key (recommended for production)
+  # Protects /metrics endpoint with Bearer token authentication
+  # Leave empty to disable authentication (not recommended for production)
+  # Set via YAML or ADMIN_METRICS_API_KEY environment variable
+  admin_metrics_api_key: "" # Example: "your-secure-random-key-here"
+  # Usage: curl -H "Authorization: Bearer your-secure-random-key-here" http://localhost:8080/metrics
+
+# Structured Logging Configuration
+logging:
+  level: "info" # debug, info, warn, error (default: info)
+  format: "console" # json (production), console (development) - default: json
+  environment: "development" # production, staging, development (default: production)
+
+# Rate Limiting Configuration
+# Generous limits designed to prevent spam while allowing legitimate use
+rate_limit:
+  # Global rate limit (across all users) - prevents DoS attacks
+  global_enabled: true
+  global_limit: 1000 # 1000 requests per minute (16.6 req/sec)
+  global_window: 1m
+
+  # Per-wallet rate limit - prevents spam from individual wallets
+  # Wallet identified via X-Wallet, X-Signer headers or query params
+  per_wallet_enabled: true
+  per_wallet_limit: 60 # 60 requests per minute (1 req/sec avg)
+  per_wallet_window: 1m
+
+  # Per-IP rate limit - fallback when wallet not identified
+  per_ip_enabled: true
+  per_ip_limit: 120 # 120 requests per minute (2 req/sec avg)
+  per_ip_window: 1m
+
+# API Key Configuration (for rate limit exemptions)
+# See docs/API_KEY_RATE_LIMIT_EXEMPTIONS.md for detailed documentation
+api_key:
+  enabled: false # Enable API key authentication system
+  keys: {} # Map of API key -> tier (free, pro, enterprise, partner)
+  # Example:
+  #   stripe_webhook_abc123: partner      # Bypass all rate limits
+  #   enterprise_customer_1: enterprise   # Bypass wallet/IP limits
+  #   pro_user_123: pro                   # Standard limits (future: higher limits)
+  #
+  # Tiers:
+  # - free: Default tier with standard rate limits
+  # - pro: Standard limits (future: higher limits planned)
+  # - enterprise: Bypasses per-wallet and per-IP limits (still respects global limit)
+  # - partner: Bypasses ALL rate limits (use for trusted integrations like Stripe)
+
+stripe:
+  secret_key: "sk_test_replace" # Stripe secret key; supply your own test key
+  webhook_secret: "whsec_replace" # Stripe webhook signing secret for validating callbacks
+  publishable_key: "pk_test_replace" # Frontend publishable key; optional if you are crypto-only
+  success_url: "http://localhost:8080/stripe/success?session_id={CHECKOUT_SESSION_ID}" # Dev helper page served by the Go server (Stripe replaces {CHECKOUT_SESSION_ID}); swap to your real app URL in production
+  cancel_url: "http://localhost:8080/stripe/cancel" # Dev helper page for canceled checkouts; override for your production UI
+  tax_rate_id: "" # Optional Stripe Tax Rate ID applied when generating ad-hoc prices (ignored when using stripe_price_id)
+  mode: "test" # Switch to "live" only when deploying with live credentials
+
+# Storage Backend Configuration
+# Choose where to store session data, access records, and refund quotes
+#
+# ⚠️  PRODUCTION WARNING: FileStore is NOT production-safe!
+# ===========================================================
+# The "file" backend is ONLY for local development and testing.
+# DO NOT use it in production for the following reasons:
+#   1. No horizontal scaling: Multiple server instances will corrupt data
+#   2. Race conditions: High concurrency (>100 req/sec) causes data corruption despite mutex
+#   3. Data loss risk: 5-second flush interval = potential loss on crashes
+#   4. No ACID guarantees: Partial writes can corrupt entire database
+#   5. Single point of failure: File corruption = total data loss
+#
+# PRODUCTION REQUIREMENT: Use PostgreSQL or MongoDB
+# - postgres: Recommended for most deployments (ACID guarantees, horizontal scaling)
+# - mongodb: Alternative NoSQL option (high write throughput, flexible schema)
+#
+# Migration from file to database: See docs/PRODUCTION.md
+#
+storage:
+  # UNIFIED STORAGE CONFIGURATION
+  # Setting backend automatically configures products, coupons, and payment storage
+  # All three systems will use the same database backend
+  #
+  # Options: "file" (dev only), "postgres" (recommended), "mongodb", "memory" (NEVER in production)
+  backend: "file" # ⚠️ LOCAL DEV ONLY - Change to "postgres" or "mongodb" for production
+  file_path: "./data/cedros-pay.db" # File backend storage path (ignored if using postgres/mongodb)
+
+  # PostgreSQL configuration (RECOMMENDED for production)
+  # Uncomment and configure for production deployments:
+  # backend: "postgres"
+  # postgres_url: "postgresql://user:password@localhost:5432/cedros_pay?sslmode=disable"
+  # schema_mapping:
+  #   products:
+  #     table_name: "products"
+  #   coupons:
+  #     table_name: "coupons"
+  #   payments:
+  #     table_name: "payment_transactions"
+  #   sessions:
+  #     table_name: "stripe_sessions"
+
+  # MongoDB configuration (alternative for production)
+  # Uncomment and configure if preferring NoSQL:
+  # backend: "mongodb"
+  # mongodb_url: "mongodb://localhost:27017"
+  # mongodb_database: "cedros_pay"
+  # schema_mapping:
+  #   products:
+  #     table_name: "products"
+  #   coupons:
+  #     table_name: "coupons"
+
+  # WARNING: "memory" backend loses all replay protection on restart - NEVER use in production
+
+  # Quote TTL Configuration
+  # Controls how long payment quotes remain valid before expiring
+  cart_quote_ttl: 15m # How long cart quotes remain valid (default: 15m)
+  refund_quote_ttl: 15m # How long refund quotes remain valid (default: 15m)
+  cleanup_interval: 5m # How often to clean up expired quotes (default: 5m)
+
+  # Automatic Payment Signature Archival
+  # Prevents unbounded database growth by deleting old payment signatures
+  # Replay protection is maintained for recent transactions (retention period)
+  archival:
+    enabled: false # Enable automatic archival (default: false)
+    retention_period: 2160h # 90 days - how long to keep payment signatures for replay protection
+    run_interval: 24h # How often to run archival cleanup (daily recommended)
+
+x402:
+  payment_address: "recipient-wallet" # Solana public key that collects on-chain payments
+
+  # ⚠️  CRITICAL: Only stablecoins are supported!
+  # The system rounds to 2 decimal places assuming $1 peg.
+  # Using non-stablecoins (SOL, BONK, etc.) will cause incorrect pricing.
+  #
+  # Supported stablecoins:
+  #   USDC:  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+  #   USDT:  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB
+  #   PYUSD: 2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo
+  #   CASH:  CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH
+  #
+  # Typo in token_mint = payments go to wrong token = permanent loss!
+  token_mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" # USDC mainnet (recommended)
+
+  allowed_tokens:
+    - "USDC" # Whitelist token symbols your frontend can request
+  token_decimals: 6 # Decimal precision for the default token (USDC = 6)
+  network: "mainnet-beta" # Matches the RPC cluster for your token_mint
+  rpc_url: "https://api.mainnet-beta.solana.com" # HTTPS RPC endpoint from your Solana provider
+  ws_url: "wss://api.mainnet-beta.solana.com" # Websocket endpoint from the same provider (used for confirmations)
+  memo_prefix: "cedros" # Prepended to memos so you can identify Cedros-originated payments
+  skip_preflight: false # Enable only if your RPC requires skipping preflight
+  commitment: confirmed # Use "finalized" if you require the highest settlement guarantee
+  tx_queue_min_time_between: "0s" # Transaction Queue (RPC Rate Limiting): Minimum time between transaction sends (e.g., "100ms", "1s"). Set to "0s" for unlimited RPC
+  tx_queue_max_in_flight: 0 # Transaction Queue (RPC Rate Limiting):Maximum concurrent transactions sent but waiting for confirmation. Set to 0 for unlimited
+  gasless_enabled: false # Set to true to have server pay network fees (requires X402_SERVER_WALLET_N env vars)
+  auto_create_token_account: false # Auto-create missing token accounts (requires X402_SERVER_WALLET_N env vars)
+  # When either feature is enabled, set X402_SERVER_WALLET_1=[1,2,3,...] (64-byte array format)
+  # Optional: X402_SERVER_WALLET_2, X402_SERVER_WALLET_3, etc. for load balancing (round-robin)
+  # These wallets are used for both gasless transactions (as fee payer) and token account creation
+  # Compute Budget & Priority Fees for Gasless Transactions
+  compute_unit_limit: 20000 # Maximum compute units for transactions
+  compute_unit_price_micro_lamports: 1 # Priority fee in microlamports
+
+paywall:
+  quote_ttl: 5m # How long payment quotes remain valid before the client must refresh
+
+  # Product list cache TTL (how long to cache GET /products response)
+  # Recommended: 5m for database sources, 0s to disable for YAML
+  # Set to 0s to disable caching (always fetch fresh from database)
+  product_cache_ttl: 5m
+
+  # NOTE: Product source is automatically inherited from storage.backend
+  # If storage.backend = "postgres", products will use PostgreSQL
+  # If storage.backend = "mongodb", products will use MongoDB
+  # If storage.backend = "file", products will use YAML (inline resources below)
+  #
+  # Advanced: Override product_source explicitly if needed (rare)
+  # product_source: "yaml" # Force YAML even when storage.backend = "postgres"
+
+  # Database connection URLs (only used when storage.backend = postgres/mongodb)
+  # These are typically the same as storage config URLs
+  # postgres_url: "postgresql://user:password@localhost:5432/cedros_pay?sslmode=disable"
+  # mongodb_url: "mongodb://localhost:27017"
+  # mongodb_database: "cedros_pay"
+  # mongodb_collection: "products"  # Optional, defaults to "products"
+
+  # YAML resources (only used when storage.backend = "file" or product_source = "yaml")
+  # Products are defined inline in this file when using YAML source
+  # See DATABASE_SCHEMA.md for database setup and migration from YAML
+  resources:
+    demo-content: # Item ID shared with the frontend; make one entry per product
+      description: "Demo protected content" # Optional copy for your UI
+      fiat_amount_cents: 100 # Stripe price in cents (100 = $1.00); omit if you rely solely on stripe_price_id
+      fiat_currency: usd
+      stripe_price_id: "price_123" # Stripe Price ID linked to this resource
+      crypto_atomic_amount: 1000000 # On-chain price in atomic units (1000000 = 1.0 USDC with 6 decimals)
+      crypto_token: "USDC" # Must match one of x402.allowed_tokens
+      memo_template: "{{resource}}:{{nonce}}" # Template used to generate the on-chain memo
+      metadata: # Static metadata merged into Stripe sessions and callbacks (user-specific data is added via request metadata)
+        plan: "demo"
+
+    test-product-2: # Second test product for cart checkout testing
+      description: "Test product 2"
+      fiat_amount_cents: 222 # $2.22 in cents
+      fiat_currency: usd
+      stripe_price_id: "price_1SQCuhR4HtkFbUJKDUQpCA6D"
+      crypto_atomic_amount: 2220000 # 2.22 USDC in atomic units (6 decimals)
+      crypto_token: "USDC"
+      memo_template: "{{resource}}:{{nonce}}"
+      metadata:
+        product: "test-2"
+    # Duplicate this block for more itemIds (e.g. "premium-post", "monthly-subscription")
+
+# Coupon Configuration
+# Coupons are automatically configured based on storage.backend (unified storage)
+# If storage.backend = "postgres", coupons use PostgreSQL
+# If storage.backend = "mongodb", coupons use MongoDB
+# If storage.backend = "file", coupons use YAML (inline coupons below)
+#
+# IMPORTANT: Currency Field Behavior (USD-Only System)
+# =====================================================
+# The "currency" field is OPTIONAL for all coupons:
+#   - For percentage discounts: IGNORED (5% off works on any amount)
+#   - For fixed discounts: OPTIONAL (defaults to USD-equivalent)
+#
+# USD-Pegged Equivalence:
+# All USD-pegged assets are treated as 1:1 equivalent for discounts:
+#   - USD (Stripe fiat)
+#   - USDC (Circle USD Coin)
+#   - USDT (Tether USD)
+#   - PYUSD (PayPal USD)
+#   - CASH (CASH USD stablecoin)
+#
+# Example: A $5 fixed discount applies to both Stripe (USD) and x402 (USDC/USDT/etc)
+#
+# The "payment_method" field controls applicability:
+#   - "" (empty): Applies to both Stripe and x402
+#   - "stripe": Only Stripe (fiat) payments
+#   - "x402": Only crypto payments
+#
+coupons:
+  cache_ttl: 1m # Short cache for usage count accuracy
+
+  # NOTE: Coupon source is automatically inherited from storage.backend
+  # Advanced: Override coupon_source explicitly if needed (rare)
+  # coupon_source: "yaml" # Force YAML even when storage.backend = "postgres"
+  # coupon_source: "disabled" # Disable coupons entirely
+
+  # Inline YAML coupons (only used when storage.backend = "file" or coupon_source = "yaml")
+  # Coupons are defined inline in this file when using YAML source
+  coupons:
+    # Example 1: Percentage discount (user must enter code)
+    # Currency field is OPTIONAL and ignored for percentage discounts
+    SAVE20:
+      code: "SAVE20"
+      auto_apply: false # User must enter code at checkout
+      applies_at: "checkout" # "catalog" (product page) or "checkout" (cart/checkout page)
+      discount_type: "percentage" # "percentage" or "fixed"
+      discount_value: 20.0 # 20% off
+      scope: "all" # "all" (site-wide) or "specific" (selected products)
+      product_ids: [] # Empty for scope = "all", list product IDs for scope = "specific"
+      payment_method: "" # "" = any payment method, "stripe" = Stripe only, "x402" = crypto only
+      usage_limit: 100 # Max redemptions (null = unlimited)
+      usage_count: 0 # Current redemptions
+      starts_at: "2025-01-01T00:00:00Z" # Optional: when coupon becomes valid
+      expires_at: "2025-12-31T23:59:59Z" # Optional: when coupon expires
+      active: true
+      metadata:
+        campaign: "winter-sale"
+
+    # Example 2: Fixed discount (no currency field needed!)
+    # Works on all USD-pegged assets (USD, USDC, USDT, PYUSD, CASH)
+    WELCOME5:
+      code: "WELCOME5"
+      auto_apply: false
+      applies_at: "checkout"
+      discount_type: "fixed"
+      discount_value: 5.0 # $5 off (applies to USD, USDC, USDT, PYUSD, CASH)
+      # currency: "usd" # OPTIONAL - can be omitted (defaults to USD-equivalent)
+      scope: "all"
+      product_ids: []
+      payment_method: "" # Works on both Stripe (USD) and x402 (USDC/USDT/etc)
+      usage_limit: null # Unlimited
+      usage_count: 0
+      starts_at: null
+      expires_at: null
+      active: true
+      metadata:
+        campaign: "new-user-welcome"
+
+    # Example 3: Auto-apply crypto discount (catalog-level)
+    # Shows discounted price on product pages for crypto payments
+    CRYPTO3:
+      code: "CRYPTO3"
+      auto_apply: true # Automatically applied (no user input needed)
+      applies_at: "catalog" # Shows discounted price on product page
+      discount_type: "percentage"
+      discount_value: 3.0 # 3% off (pass Stripe fee savings to customers)
+      scope: "all"
+      product_ids: []
+      payment_method: "x402" # Only crypto payments (USDC/USDT/PYUSD/CASH)
+      usage_limit: null
+      usage_count: 0
+      starts_at: null
+      expires_at: null
+      active: true
+      metadata:
+        campaign: "crypto-incentive"
+        description: "Save 3% by paying with crypto"
+
+    # Example 4: Product-specific discount (catalog-level)
+    # Only applies to specific products, shown on their product pages
+    DEMO50:
+      code: "DEMO50"
+      auto_apply: true
+      applies_at: "catalog" # Shows on demo-content product page
+      discount_type: "percentage"
+      discount_value: 50.0 # 50% off
+      scope: "specific" # Only applies to listed products
+      product_ids: ["demo-content"] # Only applies to demo-content
+      payment_method: "" # Both Stripe and x402
+      usage_limit: null
+      usage_count: 0
+      starts_at: null
+      expires_at: null
+      active: true
+      metadata:
+        campaign: "demo-promotion"
+
+  # Database connection URLs (only used when storage.backend = postgres/mongodb)
+  # These are typically the same as storage config URLs
+  # postgres_url: "postgresql://user:password@localhost:5432/cedros_pay?sslmode=disable"
+  # mongodb_url: "mongodb://localhost:27017"
+  # mongodb_database: "cedros_pay"
+  # mongodb_collection: "coupons" # Optional, defaults to "coupons"
+
+callbacks:
+  payment_success_url: "" # Optional webhook the server POSTs after successful payments; leave blank to disable
+  headers: {} # Additional headers (e.g. Authorization) to send with the callback request
+  body: "" # Optional static payload for testing webhooks; leave empty to send the default payment JSON
+  timeout: 3s # HTTP client timeout for delivering the callback
+
+  # Webhook Retry Configuration (with Exponential Backoff)
+  retry:
+    enabled: true # Enable retry with exponential backoff (default: true)
+    max_attempts: 5 # Maximum retry attempts (default: 5)
+    initial_interval: 1s # Initial backoff interval (default: 1s)
+    max_interval: 5m # Maximum backoff interval (default: 5m)
+    multiplier: 2.0 # Backoff multiplier (default: 2.0 - doubles interval each retry)
+
+  # Dead Letter Queue (DLQ) - saves failed webhooks after all retries exhausted
+  dlq_enabled: false # Enable DLQ for failed webhooks (default: false)
+  dlq_path: "./data/webhook-dlq.json" # File path for DLQ storage (default: ./data/webhook-dlq.json)
+
+monitoring:
+  low_balance_alert_url: "" # Webhook URL for low balance alerts (Discord, Slack, etc.)
+  low_balance_threshold: 0.01 # SOL balance threshold to trigger alert (recommended: 0.005 or higher when gasless is enabled)
+  check_interval: 15m # How often to check wallet balances
+  timeout: 5s # Request timeout for webhook calls
+  headers: {} # Optional custom headers for webhook
+  # IMPORTANT: When gasless_enabled is true, set low_balance_threshold >= 0.005 SOL
+  # to receive alerts BEFORE wallet health checker disables wallets.
+  # Optional: Custom body template (Go template syntax)
+  # Available fields: Wallet, Balance, Threshold, Timestamp
+  # body_template: |
+  #   {"content":"⚠️ Wallet {{.Wallet}} balance: {{printf \"%.6f\" .Balance}} SOL (threshold: {{printf \"%.6f\" .Threshold}} SOL)"}
+
+  # Example Discord webhook setup:
+  # low_balance_alert_url: "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
+  # Default message format is Discord-compatible (no template needed)
+
+# Circuit Breaker Configuration
+# Prevents cascading failures by automatically stopping requests to failing external services
+circuit_breaker:
+  enabled: true # Enable circuit breakers for all external services (default: true)
+
+  # Solana RPC Circuit Breaker
+  # Prevents overwhelming RPC when it's having issues
+  solana_rpc:
+    max_requests: 3 # Max requests allowed in half-open state (testing recovery)
+    interval: 60s # Stats reset interval in closed state (normal operation)
+    timeout: 30s # How long to wait in open state before testing recovery
+    consecutive_failures: 5 # Trip breaker after this many consecutive failures
+    failure_ratio: 0.5 # Trip breaker if failure rate exceeds 50%
+    min_requests: 10 # Minimum requests before checking failure ratio
+
+  # Stripe API Circuit Breaker
+  # Prevents overwhelming Stripe API when it's having issues
+  stripe_api:
+    max_requests: 3
+    interval: 60s
+    timeout: 30s
+    consecutive_failures: 5
+    failure_ratio: 0.5
+    min_requests: 10
+
+  # Webhook Circuit Breaker
+  # Prevents retrying to dead webhook endpoints
+  webhook:
+    max_requests: 3
+    interval: 120s # Longer interval for webhooks (2 minutes)
+    timeout: 60s # Longer timeout before retry (1 minute)
+    consecutive_failures: 3 # Trip after fewer failures for webhooks
+    failure_ratio: 0.8 # Higher threshold (80%) since webhook failures are less critical
+    min_requests: 5

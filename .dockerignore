@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Environment and config
+.env
+.env.*
+configs/local.yaml
+configs/*.local.yaml
+
+# Build artifacts
+bin/
+dist/
+*.test
+coverage.out
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# IDE and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Development files
+Makefile
+.editorconfig
+
+# Local testing data
+data/

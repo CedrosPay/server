@@ -1,0 +1,25 @@
+# Build artifacts
+bin/
+dist/
+
+# Go
+*.test
+coverage.out
+
+# Config and environment
+.env
+.env.*
+!.env.example
+configs/*.local.yaml
+configs/local.yaml
+configs/config.yaml
+
+# IDE and OS
+.DS_Store
+.idea/
+.vscode/
+/server
+.DS_Store
+cmd/server/server
+
+data/
