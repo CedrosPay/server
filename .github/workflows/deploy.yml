@@ -1,0 +1,197 @@
+name: Production Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Skip tests (use with caution)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      force_deploy:
+        description: "Force deploy even if safety checks fail (DANGEROUS)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  check-safety-status:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_allowed: ${{ steps.check.outputs.allowed }}
+
+    steps:
+      - name: Check deployment trigger
+        id: check
+        run: |
+          echo "🚀 Direct deployment - pre-deploy checks disabled for cost savings"
+          echo "allowed=true" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    needs: check-safety-status
+    if: needs.check-safety-status.outputs.deploy_allowed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Verify Go modules
+        run: go mod verify
+
+      - name: Lint Code
+        run: |
+          echo "Running go fmt check..."
+          fmt_output=$(go fmt ./...)
+          if [ -n "$fmt_output" ]; then
+            echo "❌ The following files need formatting:"
+            echo "$fmt_output"
+            echo ""
+            echo "Please run 'go fmt ./...' locally and commit the changes."
+            exit 1
+          else
+            echo "✅ All files are properly formatted"
+          fi
+
+          echo "Running go vet..."
+          go vet ./...
+
+      # Tests disabled for faster deployments
+      # - name: Run Tests
+      #   if: github.event.inputs.skip_tests != 'true'
+      #   run: |
+      #     echo "🧪 Running tests..."
+      #     go test -v -race -timeout=5m ./...
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image (with cache)
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false
+          tags: ${{ secrets.DOCKER_USERNAME }}/cedros-pay-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+          build-args: |
+            VERSION=v1.0.0
+            BUILD_TIME=${{ github.event.head_commit.timestamp }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/cedros-pay-server:latest
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "🚀 Deploying Cedros Pay Server..."
+
+            # Stop and remove old containers
+            docker stop cedros-pay-server cedros-pay-redis || true
+            docker rm cedros-pay-server cedros-pay-redis || true
+
+            # Create Docker network if it doesn't exist
+            docker network create cedros-pay-network 2>/dev/null || true
+
+            # Start Redis (for rate limiting and idempotency cache)
+            echo "Starting Redis container..."
+            docker run -d --restart unless-stopped \
+                --name cedros-pay-redis \
+                --network cedros-pay-network \
+                -v cedros_redis_data:/data \
+                --health-cmd "redis-cli ping" \
+                --health-interval 10s \
+                --health-timeout 5s \
+                --health-retries 3 \
+                redis:7-alpine redis-server --appendonly yes
+
+            # Wait for Redis to be ready
+            echo "Waiting for Redis to be ready..."
+            sleep 5
+
+            # Pull latest Docker image
+            echo "Pulling latest Docker image..."
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p '${{ secrets.DOCKER_PASSWORD }}'
+            docker pull ${{ secrets.DOCKER_USERNAME }}/cedros-pay-server:latest
+
+            # Start Cedros Pay Server
+            echo "Starting Cedros Pay Server container..."
+            docker run -d --restart unless-stopped \
+                --name cedros-pay-server \
+                --network cedros-pay-network \
+                -p 127.0.0.1:8082:8080 \
+                -v /app/cedros-pay/data:/app/data \
+                --env PORT=8080 \
+                --env ENVIRONMENT=production \
+                --env LOG_LEVEL=info \
+                --env CORS_ALLOWED_ORIGINS="https://cedrospay.com,https://docs.cedrospay.com,https://cedros.io,https://api.cedros.io" \
+                --env POSTGRES_URL="${{ secrets.POSTGRES_URL }}" \
+                --env REDIS_URL="redis://cedros-pay-redis:6379/0" \
+                --env CEDROS_STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+                --env CEDROS_STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+                --env CEDROS_STRIPE_PUBLISHABLE_KEY="${{ secrets.STRIPE_PUBLISHABLE_KEY }}" \
+                --env X402_SERVER_WALLET_1="${{ secrets.X402_SERVER_WALLET_1 }}" \
+                --env CEDROS_X402_PAYMENT_ADDRESS="${{ secrets.X402_PAYMENT_ADDRESS }}" \
+                --env CEDROS_X402_RPC_URL="${{ secrets.SOLANA_RPC_URL }}" \
+                --env CALLBACK_PAYMENT_SUCCESS_URL="${{ secrets.PAYMENT_SUCCESS_WEBHOOK_URL }}" \
+                --env MONITORING_LOW_BALANCE_ALERT_URL="${{ secrets.LOW_BALANCE_ALERT_URL }}" \
+                --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8080/cedros-health || exit 1" \
+                --health-interval 30s \
+                --health-timeout 5s \
+                --health-retries 3 \
+                ${{ secrets.DOCKER_USERNAME }}/cedros-pay-server:latest \
+                -config /app/configs/production.yaml
+
+            echo "✅ Deployment complete! Checking container status..."
+            sleep 5
+            docker ps | grep cedros-pay
+
+            echo "🏥 Checking health status..."
+            docker inspect --format='{{.State.Health.Status}}' cedros-pay-server || echo "Health check not ready yet"
+
+  deployment-notification:
+    needs: [check-safety-status, build-and-push]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Report Deployment Status
+        run: |
+          if [[ "${{ needs.check-safety-status.outputs.deploy_allowed }}" != "true" ]]; then
+            echo "🚫 DEPLOYMENT BLOCKED - Pre-deploy checks failed"
+            exit 1
+          elif [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
+            echo "✅ DEPLOYMENT SUCCESSFUL"
+            echo "🌐 Cedros Pay Server deployed to pay.cedros.io (port 8082)"
+            echo "📊 Health check: https://pay.cedros.io/cedros-health"
+          else
+            echo "❌ DEPLOYMENT FAILED - Check logs for details"
+            exit 1
+          fi

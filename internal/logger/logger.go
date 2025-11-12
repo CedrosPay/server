@@ -14,7 +14,7 @@ import (
 type contextKey string
 
 const (
-	loggerKey   contextKey = "logger"
+	loggerKey    contextKey = "logger"
 	requestIDKey contextKey = "request_id"
 )
 

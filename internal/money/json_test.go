@@ -236,4 +236,3 @@ func TestMoneyResponse_JSON(t *testing.T) {
 		t.Errorf("Unmarshal() = %v, want %v", parsed.Total, Money{USDC, 1500000})
 	}
 }
-

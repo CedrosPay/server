@@ -154,7 +154,7 @@ func testConfig() *config.Config {
 			Resources: map[string]config.PaywallResource{
 				"demo-content": {
 					ResourceID:         "demo-content",
-					FiatAmountCents:    100, // 1.0 USD in cents
+					FiatAmountCents:    100,   // 1.0 USD in cents
 					FiatCurrency:       "USD", // Must match asset registry (case-sensitive)
 					StripePriceID:      "price_123",
 					Description:        "demo",

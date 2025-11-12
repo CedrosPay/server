@@ -7,7 +7,8 @@ import (
 
 // MoneyJSON represents the JSON format for Money.
 // Uses atomic units for precision:
-//   {"asset":"USDC", "atomic":"1500000"}
+//
+//	{"asset":"USDC", "atomic":"1500000"}
 type MoneyJSON struct {
 	Asset  string `json:"asset"`  // Asset code (USD, USDC, SOL, etc.)
 	Atomic string `json:"atomic"` // Atomic units as string

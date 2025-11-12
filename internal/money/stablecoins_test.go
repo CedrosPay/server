@@ -6,58 +6,58 @@ import (
 
 func TestValidateStablecoinMint(t *testing.T) {
 	tests := []struct {
-		name      string
-		mint      string
+		name       string
+		mint       string
 		wantSymbol string
-		wantErr   bool
+		wantErr    bool
 	}{
 		{
-			name:      "USDC mainnet",
-			mint:      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+			name:       "USDC mainnet",
+			mint:       "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
 			wantSymbol: "USDC",
-			wantErr:   false,
+			wantErr:    false,
 		},
 		{
-			name:      "USDT mainnet",
-			mint:      "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+			name:       "USDT mainnet",
+			mint:       "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
 			wantSymbol: "USDT",
-			wantErr:   false,
+			wantErr:    false,
 		},
 		{
-			name:      "PYUSD mainnet",
-			mint:      "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo",
+			name:       "PYUSD mainnet",
+			mint:       "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo",
 			wantSymbol: "PYUSD",
-			wantErr:   false,
+			wantErr:    false,
 		},
 		{
-			name:      "CASH mainnet",
-			mint:      "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH",
+			name:       "CASH mainnet",
+			mint:       "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH",
 			wantSymbol: "CASH",
-			wantErr:   false,
+			wantErr:    false,
 		},
 		{
-			name:      "SOL (non-stablecoin)",
-			mint:      "So11111111111111111111111111111111111111112",
+			name:       "SOL (non-stablecoin)",
+			mint:       "So11111111111111111111111111111111111111112",
 			wantSymbol: "",
-			wantErr:   true,
+			wantErr:    true,
 		},
 		{
-			name:      "BONK (non-stablecoin)",
-			mint:      "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+			name:       "BONK (non-stablecoin)",
+			mint:       "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
 			wantSymbol: "",
-			wantErr:   true,
+			wantErr:    true,
 		},
 		{
-			name:      "invalid mint address",
-			mint:      "invalid-mint-address",
+			name:       "invalid mint address",
+			mint:       "invalid-mint-address",
 			wantSymbol: "",
-			wantErr:   true,
+			wantErr:    true,
 		},
 		{
-			name:      "typo in USDC mint",
-			mint:      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1X", // Changed last char
+			name:       "typo in USDC mint",
+			mint:       "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1X", // Changed last char
 			wantSymbol: "",
-			wantErr:   true,
+			wantErr:    true,
 		},
 	}
 

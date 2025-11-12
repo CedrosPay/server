@@ -16,10 +16,10 @@ var ErrCartExpired = errors.New("storage: cart quote expired")
 
 // CartItem represents a single item in a cart quote.
 type CartItem struct {
-	ResourceID  string            // Resource ID from paywall config
-	Quantity    int64             // Number of this item
-	Price       money.Money       // Price per unit (locked at quote time)
-	Metadata    map[string]string // Per-item custom metadata
+	ResourceID string            // Resource ID from paywall config
+	Quantity   int64             // Number of this item
+	Price      money.Money       // Price per unit (locked at quote time)
+	Metadata   map[string]string // Per-item custom metadata
 }
 
 // CartQuote represents a temporary cart with locked prices and expiration.

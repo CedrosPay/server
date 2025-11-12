@@ -43,11 +43,11 @@ type fileData struct {
 // For production deployments, use PostgreSQL or MongoDB instead.
 //
 // Reasons FileStore is unsuitable for production:
-//   1. No horizontal scaling support (multiple instances corrupt data)
-//   2. Race conditions at high concurrency (>100 req/sec)
-//   3. 5-second flush interval creates data loss risk
-//   4. No ACID guarantees (partial writes corrupt database)
-//   5. Single point of failure (file corruption = total loss)
+//  1. No horizontal scaling support (multiple instances corrupt data)
+//  2. Race conditions at high concurrency (>100 req/sec)
+//  3. 5-second flush interval creates data loss risk
+//  4. No ACID guarantees (partial writes corrupt database)
+//  5. Single point of failure (file corruption = total loss)
 //
 // See docs/PRODUCTION.md for production deployment guide.
 func NewFileStore(filePath string) (*FileStore, error) {

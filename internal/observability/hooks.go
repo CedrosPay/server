@@ -87,73 +87,73 @@ type DatabaseHook interface {
 
 // PaymentStartedEvent is emitted when a payment request is received.
 type PaymentStartedEvent struct {
-	Timestamp   time.Time
-	PaymentID   string
-	Method      string // "stripe" or "x402"
-	ResourceID  string
-	Amount      int64  // Amount in atomic units (e.g., cents, lamports)
-	Token       string // Currency/token (e.g., "USD", "USDC")
-	Wallet      string // Payer wallet address (for x402)
-	Metadata    map[string]string
+	Timestamp  time.Time
+	PaymentID  string
+	Method     string // "stripe" or "x402"
+	ResourceID string
+	Amount     int64  // Amount in atomic units (e.g., cents, lamports)
+	Token      string // Currency/token (e.g., "USD", "USDC")
+	Wallet     string // Payer wallet address (for x402)
+	Metadata   map[string]string
 }
 
 // PaymentCompletedEvent is emitted when a payment completes.
 type PaymentCompletedEvent struct {
-	Timestamp      time.Time
-	PaymentID      string
-	Method         string
-	ResourceID     string
-	Success        bool
-	ErrorReason    string // Set if Success=false
-	Amount         int64
-	Token          string
-	Wallet         string
-	Duration       time.Duration // Time from start to completion
-	TransactionID  string        // Blockchain tx signature or Stripe session ID
-	Metadata       map[string]string
+	Timestamp     time.Time
+	PaymentID     string
+	Method        string
+	ResourceID    string
+	Success       bool
+	ErrorReason   string // Set if Success=false
+	Amount        int64
+	Token         string
+	Wallet        string
+	Duration      time.Duration // Time from start to completion
+	TransactionID string        // Blockchain tx signature or Stripe session ID
+	Metadata      map[string]string
 }
 
 // PaymentSettledEvent is emitted when on-chain settlement is confirmed.
 type PaymentSettledEvent struct {
-	Timestamp     time.Time
-	PaymentID     string
-	Network       string // "solana-mainnet", "ethereum-mainnet", etc.
-	TransactionID string
-	Confirmations int
+	Timestamp          time.Time
+	PaymentID          string
+	Network            string // "solana-mainnet", "ethereum-mainnet", etc.
+	TransactionID      string
+	Confirmations      int
 	SettlementDuration time.Duration // Time from payment to settlement
 }
 
 // WebhookQueuedEvent is emitted when a webhook is queued for delivery.
 type WebhookQueuedEvent struct {
-	Timestamp   time.Time
-	WebhookID   string
-	EventType   string // "payment" or "refund"
-	URL         string
-	EventID     string // Idempotency key for the webhook event
-	Metadata    map[string]string
+	Timestamp time.Time
+	WebhookID string
+	EventType string // "payment" or "refund"
+	URL       string
+	EventID   string // Idempotency key for the webhook event
+	Metadata  map[string]string
 }
 
 // WebhookDeliveredEvent is emitted when a webhook is successfully delivered.
 type WebhookDeliveredEvent struct {
-	Timestamp   time.Time
-	WebhookID   string
-	EventType   string
-	URL         string
-	EventID     string
-	Attempts    int
-	Duration    time.Duration
-	StatusCode  int
+	Timestamp  time.Time
+	WebhookID  string
+	EventType  string
+	URL        string
+	EventID    string
+	Attempts   int
+	Duration   time.Duration
+	StatusCode int
 }
 
 // WebhookFailedEvent is emitted when a webhook delivery fails.
 type WebhookFailedEvent struct {
-	Timestamp   time.Time
-	WebhookID   string
-	EventType   string
-	URL         string
-	EventID     string
-	Attempts    int
-	Error       string
+	Timestamp    time.Time
+	WebhookID    string
+	EventType    string
+	URL          string
+	EventID      string
+	Attempts     int
+	Error        string
 	FinalFailure bool // true if all retries exhausted
 }
 
@@ -198,46 +198,46 @@ type RefundProcessedEvent struct {
 
 // CartCreatedEvent is emitted when a cart quote is created.
 type CartCreatedEvent struct {
-	Timestamp  time.Time
-	CartID     string
-	ItemCount  int
-	TotalAmount int64
-	Token      string
-	ExpiresAt  time.Time
-	Metadata   map[string]string
-}
-
-// CartCheckoutEvent is emitted when a cart checkout is attempted.
-type CartCheckoutEvent struct {
 	Timestamp   time.Time
 	CartID      string
 	ItemCount   int
 	TotalAmount int64
 	Token       string
-	Status      string // "success", "failed", "pending"
-	PaymentMethod string
-	Wallet      string
+	ExpiresAt   time.Time
 	Metadata    map[string]string
+}
+
+// CartCheckoutEvent is emitted when a cart checkout is attempted.
+type CartCheckoutEvent struct {
+	Timestamp     time.Time
+	CartID        string
+	ItemCount     int
+	TotalAmount   int64
+	Token         string
+	Status        string // "success", "failed", "pending"
+	PaymentMethod string
+	Wallet        string
+	Metadata      map[string]string
 }
 
 // RPCCallEvent is emitted for blockchain RPC calls.
 type RPCCallEvent struct {
-	Timestamp   time.Time
-	Method      string // "getTransaction", "sendTransaction", etc.
-	Network     string // "solana-mainnet", etc.
-	Duration    time.Duration
-	Success     bool
-	ErrorType   string // "timeout", "rate_limit", "connection", "not_found", "other"
-	Metadata    map[string]string
+	Timestamp time.Time
+	Method    string // "getTransaction", "sendTransaction", etc.
+	Network   string // "solana-mainnet", etc.
+	Duration  time.Duration
+	Success   bool
+	ErrorType string // "timeout", "rate_limit", "connection", "not_found", "other"
+	Metadata  map[string]string
 }
 
 // DatabaseQueryEvent is emitted for database operations.
 type DatabaseQueryEvent struct {
-	Timestamp   time.Time
-	Operation   string // "get", "list", "save", "delete", etc.
-	Backend     string // "postgres", "mongodb", "file", "memory"
-	Duration    time.Duration
-	Success     bool
-	Error       string
-	Metadata    map[string]string
+	Timestamp time.Time
+	Operation string // "get", "list", "save", "delete", etc.
+	Backend   string // "postgres", "mongodb", "file", "memory"
+	Duration  time.Duration
+	Success   bool
+	Error     string
+	Metadata  map[string]string
 }

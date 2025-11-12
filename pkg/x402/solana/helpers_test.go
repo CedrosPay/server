@@ -280,9 +280,9 @@ func TestTokenAllowed(t *testing.T) {
 
 func TestIsAlreadyProcessedError(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   error
-		want  bool
+		name string
+		err  error
+		want bool
 	}{
 		{
 			name: "contains 'Transaction already processed'",
@@ -323,9 +323,9 @@ func TestIsAlreadyProcessedError(t *testing.T) {
 
 func TestIsAccountNotFoundError(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   error
-		want  bool
+		name string
+		err  error
+		want bool
 	}{
 		{
 			name: "account not found",
@@ -371,9 +371,9 @@ func TestIsAccountNotFoundError(t *testing.T) {
 
 func TestIsInsufficientFundsTokenError(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   error
-		want  bool
+		name string
+		err  error
+		want bool
 	}{
 		{
 			name: "SPL token insufficient funds (0x1)",
@@ -419,9 +419,9 @@ func TestIsInsufficientFundsTokenError(t *testing.T) {
 
 func TestIsInsufficientFundsSOLError(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   error
-		want  bool
+		name string
+		err  error
+		want bool
 	}{
 		{
 			name: "insufficient lamports",

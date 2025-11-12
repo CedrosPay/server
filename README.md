@@ -1,6 +1,6 @@
 # Cedros Pay Server
 
-[![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
@@ -673,6 +673,40 @@ paywall:
   }
   ```
 
+**GET {prefix}/paywall/v1/stripe-session/verify** 🆕 *(Stripe payment verification)*
+- Verify that a Stripe checkout session was completed and paid
+- **Security Critical:** Prevents payment bypass attacks where users manually enter success URLs
+- Frontend MUST call this endpoint before granting access to purchased content
+- Query parameter: `session_id` (from Stripe redirect URL)
+- Returns 200 with payment details if verified, 404 if session not found
+- Example request:
+  ```bash
+  GET /paywall/v1/stripe-session/verify?session_id=cs_test_abc123
+  ```
+- Example response (200 - verified):
+  ```json
+  {
+    "verified": true,
+    "resource_id": "demo-content",
+    "paid_at": "2025-11-11T13:45:00Z",
+    "amount": "$1.00 USD",
+    "customer": "cus_abc123",
+    "metadata": {
+      "userId": "12345"
+    }
+  }
+  ```
+- Example response (404 - not verified):
+  ```json
+  {
+    "error": {
+      "code": "session_not_found",
+      "message": "Payment not completed or session invalid"
+    }
+  }
+  ```
+- **Integration:** See `STRIPE_VERIFICATION_INTEGRATION.md` for complete frontend implementation guide
+
 **POST {prefix}/paywall/v1/cart/checkout** *(Multi-item cart checkout)* 🆕
 - Create Stripe checkout session for multiple products in a single transaction
 - Supports quantity > 1 per item
@@ -1012,6 +1046,32 @@ coupons:
 - User pays all fees (network fees + token transfer)
 - Transaction must be complete and signed by user
 - Server verifies transaction on-chain before granting access
+- **Note:** Each signature can only be verified once (replay protection)
+
+**GET {prefix}/paywall/v1/x402-transaction/verify?signature={signature}** 🆕 *(Re-access verification)*
+- Verify that an x402 transaction was previously completed and paid
+- Query parameter: `signature` (Solana transaction signature)
+- Returns payment details: resource_id, wallet, amount, metadata, paid_at
+- **Use case:** User paid with crypto, stored signature, wants to re-access without paying again
+- Example request:
+  ```bash
+  GET /paywall/v1/x402-transaction/verify?signature=5Kn8...
+  ```
+- Example response (200 - verified):
+  ```json
+  {
+    "verified": true,
+    "resource_id": "demo-content",
+    "wallet": "2TRi...",
+    "paid_at": "2025-11-11T13:45:00Z",
+    "amount": "$1.00 USDC",
+    "metadata": {
+      "userId": "12345"
+    }
+  }
+  ```
+- **Frontend should verify:** Check that `wallet` matches currently connected wallet before granting access
+- **Security:** Prevents sharing transaction signatures between different users
 
 ### Solana Payment - Gasless Mode (Server Pays Network Fees)
 

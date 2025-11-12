@@ -121,6 +121,96 @@ func (h *handlers) createStripeSession(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// verifyStripeSession verifies that a Stripe checkout session was completed and paid.
+// This endpoint prevents payment bypass attacks where users manually enter success URLs.
+func (h *handlers) verifyStripeSession(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+
+	// Extract session_id from query parameter
+	sessionID := r.URL.Query().Get("session_id")
+
+	if sessionID == "" {
+		log.Warn().Msg("stripe.verify.missing_session_id")
+		apierrors.WriteSimpleError(w, apierrors.ErrCodeMissingField, "session_id is required")
+		return
+	}
+
+	// Look up payment record using Stripe signature format
+	// When webhook processes payment, it stores: signature = "stripe:{session_id}"
+	signature := fmt.Sprintf("stripe:%s", sessionID)
+	tx, err := h.paywall.GetPayment(r.Context(), signature)
+
+	if err != nil {
+		// Payment not found = either not completed yet, or fake session_id
+		log.Warn().
+			Str("session_id", sessionID).
+			Err(err).
+			Msg("stripe.verify.payment_not_found")
+		apierrors.WriteSimpleError(w, apierrors.ErrCodeSessionNotFound, "Payment not completed or session invalid")
+		return
+	}
+
+	// Payment verified! Return success with resource info
+	log.Info().
+		Str("session_id", sessionID).
+		Str("resource_id", tx.ResourceID).
+		Str("customer", tx.Wallet).
+		Msg("stripe.verify.success")
+
+	responders.JSON(w, http.StatusOK, map[string]any{
+		"verified":    true,
+		"resource_id": tx.ResourceID,
+		"paid_at":     tx.CreatedAt,
+		"amount":      tx.Amount.String(),
+		"customer":    tx.Wallet,
+		"metadata":    tx.Metadata,
+	})
+}
+
+// verifyX402Transaction verifies that an x402 transaction was completed and paid.
+// This endpoint allows frontends to check if a transaction signature is valid for re-access scenarios.
+func (h *handlers) verifyX402Transaction(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+
+	// Extract signature from query parameter
+	signature := r.URL.Query().Get("signature")
+
+	if signature == "" {
+		log.Warn().Msg("x402.verify.missing_signature")
+		apierrors.WriteSimpleError(w, apierrors.ErrCodeMissingField, "signature is required")
+		return
+	}
+
+	// Look up payment record by transaction signature
+	tx, err := h.paywall.GetPayment(r.Context(), signature)
+
+	if err != nil {
+		// Payment not found = either not verified yet, or invalid signature
+		log.Warn().
+			Str("signature", logger.TruncateAddress(signature)).
+			Err(err).
+			Msg("x402.verify.payment_not_found")
+		apierrors.WriteSimpleError(w, apierrors.ErrCodeTransactionNotFound, "Transaction not found or not verified")
+		return
+	}
+
+	// Payment verified! Return success with resource info
+	log.Info().
+		Str("signature", logger.TruncateAddress(signature)).
+		Str("resource_id", tx.ResourceID).
+		Str("wallet", logger.TruncateAddress(tx.Wallet)).
+		Msg("x402.verify.success")
+
+	responders.JSON(w, http.StatusOK, map[string]any{
+		"verified":    true,
+		"resource_id": tx.ResourceID,
+		"wallet":      tx.Wallet,
+		"paid_at":     tx.CreatedAt,
+		"amount":      tx.Amount.String(),
+		"metadata":    tx.Metadata,
+	})
+}
+
 // handleStripeWebhook processes incoming Stripe webhook events.
 func (h *handlers) handleStripeWebhook(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())

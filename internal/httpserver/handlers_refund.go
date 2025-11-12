@@ -31,8 +31,9 @@ type requestRefundRequest struct {
 // 1. originalPurchaseId MUST be a Solana transaction signature that exists in our payment records
 // 2. recipientWallet MUST match the wallet that made the original payment
 // 3. Request MUST be signed by EITHER:
-//    - The recipientWallet (user requesting their own refund), OR
-//    - The payTo wallet (admin issuing refund on behalf of user)
+//   - The recipientWallet (user requesting their own refund), OR
+//   - The payTo wallet (admin issuing refund on behalf of user)
+//
 // 4. Only one refund request can be created per transaction signature
 // Admin reviews and approves/denies requests via separate management endpoints.
 func (h *handlers) requestRefund(w http.ResponseWriter, r *http.Request) {

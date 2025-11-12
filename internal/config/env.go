@@ -17,6 +17,14 @@ func (c *Config) applyEnvOverrides() {
 	setIfEnv(&c.Server.RoutePrefix, "CEDROS_ROUTE_PREFIX")
 	setIfEnv(&c.Server.AdminMetricsAPIKey, "CEDROS_ADMIN_METRICS_API_KEY")
 
+	// CORS allowed origins (comma-separated list)
+	if corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); corsOrigins != "" {
+		c.Server.CORSAllowedOrigins = strings.Split(corsOrigins, ",")
+		for i := range c.Server.CORSAllowedOrigins {
+			c.Server.CORSAllowedOrigins[i] = strings.TrimSpace(c.Server.CORSAllowedOrigins[i])
+		}
+	}
+
 	// Normalize route prefix: ensure it starts with / and doesn't end with /
 	if c.Server.RoutePrefix != "" {
 		c.Server.RoutePrefix = normalizeRoutePrefix(c.Server.RoutePrefix)
@@ -131,6 +139,11 @@ func (c *Config) applyEnvOverrides() {
 		headerName := textproto.CanonicalMIMEHeaderKey(strings.ReplaceAll(name, "_", "-"))
 		c.Monitoring.Headers[headerName] = parts[1]
 	}
+
+	// Storage config
+	setIfEnv(&c.Storage.PostgresURL, "POSTGRES_URL")
+	setIfEnv(&c.Storage.MongoDBURL, "MONGODB_URL")
+	setIfEnv(&c.Storage.MongoDBDatabase, "MONGODB_DATABASE")
 
 	// API Key config
 	setBoolIfEnv(&c.APIKey.Enabled, "CEDROS_API_KEY_ENABLED")

@@ -16,13 +16,13 @@ import (
 
 // PostgresStore implements Store using PostgreSQL.
 type PostgresStore struct {
-	db                      *sql.DB
-	ownsDB                  bool   // Track if we created the DB connection (for Close())
+	db                           *sql.DB
+	ownsDB                       bool   // Track if we created the DB connection (for Close())
 	paymentTransactionsTableName string // Configurable table name (default: "payment_transactions")
-	adminNoncesTableName     string // Configurable table name (default: "admin_nonces")
-	cartQuotesTableName      string // Configurable table name (default: "cart_quotes")
-	refundQuotesTableName    string // Configurable table name (default: "refund_quotes")
-	webhookQueueTableName    string // Configurable table name (default: "webhook_queue")
+	adminNoncesTableName         string // Configurable table name (default: "admin_nonces")
+	cartQuotesTableName          string // Configurable table name (default: "cart_quotes")
+	refundQuotesTableName        string // Configurable table name (default: "refund_quotes")
+	webhookQueueTableName        string // Configurable table name (default: "webhook_queue")
 }
 
 // NewPostgresStore creates a new PostgreSQL-backed store.
@@ -44,13 +44,13 @@ func NewPostgresStore(connectionString string, poolConfig config.PostgresPoolCon
 	config.ApplyPostgresPoolSettings(db, poolConfig)
 
 	store := &PostgresStore{
-		db:                      db,
-		ownsDB:                  true,
+		db:                           db,
+		ownsDB:                       true,
 		paymentTransactionsTableName: "payment_transactions",
-		adminNoncesTableName:     "admin_nonces",
-		cartQuotesTableName:      "cart_quotes",
-		refundQuotesTableName:    "refund_quotes",
-		webhookQueueTableName:    "webhook_queue",
+		adminNoncesTableName:         "admin_nonces",
+		cartQuotesTableName:          "cart_quotes",
+		refundQuotesTableName:        "refund_quotes",
+		webhookQueueTableName:        "webhook_queue",
 	}
 
 	// Create tables if they don't exist (using default table names)
@@ -67,13 +67,13 @@ func NewPostgresStore(connectionString string, poolConfig config.PostgresPoolCon
 // This allows sharing a single connection pool across multiple stores/repositories.
 func NewPostgresStoreWithDB(db *sql.DB) (*PostgresStore, error) {
 	store := &PostgresStore{
-		db:                      db,
-		ownsDB:                  false,
+		db:                           db,
+		ownsDB:                       false,
 		paymentTransactionsTableName: "payment_transactions",
-		adminNoncesTableName:     "admin_nonces",
-		cartQuotesTableName:      "cart_quotes",
-		refundQuotesTableName:    "refund_quotes",
-		webhookQueueTableName:    "webhook_queue",
+		adminNoncesTableName:         "admin_nonces",
+		cartQuotesTableName:          "cart_quotes",
+		refundQuotesTableName:        "refund_quotes",
+		webhookQueueTableName:        "webhook_queue",
 	}
 
 	// Create tables if they don't exist (using default table names)

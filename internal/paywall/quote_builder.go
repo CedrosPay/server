@@ -11,8 +11,8 @@ type x402QuoteOptions struct {
 	ResourceID            string
 	AtomicAmount          uint64 // Amount in atomic units (e.g., lamports, micro-USDC)
 	Token                 string
-	PayToAddress          string    // Wallet address for payTo field
-	RecipientTokenAccount string    // Actual token account for transaction building
+	PayToAddress          string // Wallet address for payTo field
+	RecipientTokenAccount string // Actual token account for transaction building
 	Description           string
 	ExpiresAt             time.Time
 	IncludeFeePayer       bool // Whether to include feePayer for gasless transactions

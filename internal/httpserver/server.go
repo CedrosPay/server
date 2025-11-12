@@ -137,19 +137,19 @@ func ConfigureRouter(router chi.Router, cfg *config.Config, paywallSvc *paywall.
 	// Rate limiting middleware (applied globally)
 	// Convert config to ratelimit.Config
 	rateLimitCfg := ratelimit.Config{
-		GlobalEnabled:      cfg.RateLimit.GlobalEnabled,
-		GlobalLimit:        cfg.RateLimit.GlobalLimit,
-		GlobalWindow:       cfg.RateLimit.GlobalWindow.Duration,
-		GlobalBurst:        cfg.RateLimit.GlobalLimit / 10, // Burst = 10% of limit
-		PerWalletEnabled:   cfg.RateLimit.PerWalletEnabled,
-		PerWalletLimit:     cfg.RateLimit.PerWalletLimit,
-		PerWalletWindow:    cfg.RateLimit.PerWalletWindow.Duration,
-		PerWalletBurst:     cfg.RateLimit.PerWalletLimit / 6, // Burst = ~17% of limit
-		PerIPEnabled:       cfg.RateLimit.PerIPEnabled,
-		PerIPLimit:         cfg.RateLimit.PerIPLimit,
-		PerIPWindow:        cfg.RateLimit.PerIPWindow.Duration,
-		PerIPBurst:         cfg.RateLimit.PerIPLimit / 6, // Burst = ~17% of limit
-		Metrics:            metricsCollector, // Pass metrics collector to rate limiter
+		GlobalEnabled:    cfg.RateLimit.GlobalEnabled,
+		GlobalLimit:      cfg.RateLimit.GlobalLimit,
+		GlobalWindow:     cfg.RateLimit.GlobalWindow.Duration,
+		GlobalBurst:      cfg.RateLimit.GlobalLimit / 10, // Burst = 10% of limit
+		PerWalletEnabled: cfg.RateLimit.PerWalletEnabled,
+		PerWalletLimit:   cfg.RateLimit.PerWalletLimit,
+		PerWalletWindow:  cfg.RateLimit.PerWalletWindow.Duration,
+		PerWalletBurst:   cfg.RateLimit.PerWalletLimit / 6, // Burst = ~17% of limit
+		PerIPEnabled:     cfg.RateLimit.PerIPEnabled,
+		PerIPLimit:       cfg.RateLimit.PerIPLimit,
+		PerIPWindow:      cfg.RateLimit.PerIPWindow.Duration,
+		PerIPBurst:       cfg.RateLimit.PerIPLimit / 6, // Burst = ~17% of limit
+		Metrics:          metricsCollector,             // Pass metrics collector to rate limiter
 	}
 	router.Use(ratelimit.GlobalLimiter(rateLimitCfg))
 	router.Use(ratelimit.WalletLimiter(rateLimitCfg))
@@ -192,6 +192,8 @@ func ConfigureRouter(router chi.Router, cfg *config.Config, paywallSvc *paywall.
 		r.Post(prefix+"/paywall/v1/quote", handler.paywallQuote)
 		r.Post(prefix+"/paywall/v1/verify", handler.paywallVerify)
 		r.With(idempotencyMW).Post(prefix+"/paywall/v1/stripe-session", handler.createStripeSession)
+		r.Get(prefix+"/paywall/v1/stripe-session/verify", handler.verifyStripeSession)
+		r.Get(prefix+"/paywall/v1/x402-transaction/verify", handler.verifyX402Transaction)
 		r.With(idempotencyMW).Post(prefix+"/paywall/v1/cart/checkout", handler.createCartCheckout)
 		r.With(idempotencyMW).Post(prefix+"/paywall/v1/cart/quote", handler.requestCartQuote)
 		r.Post(prefix+"/paywall/v1/gasless-transaction", handler.buildGaslessTransaction)

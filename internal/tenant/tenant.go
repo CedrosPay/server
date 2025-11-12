@@ -33,10 +33,10 @@ func WithTenant(ctx context.Context, tenantID string) context.Context {
 
 // Extraction handles tenant ID extraction from HTTP requests
 // Supports multiple extraction methods (in priority order):
-//   1. X-Tenant-ID header (explicit tenant specification)
-//   2. JWT claims (tenant_id field in auth token)
-//   3. Subdomain (tenant1.api.cedrospay.com → tenant1)
-//   4. Default tenant for backwards compatibility
+//  1. X-Tenant-ID header (explicit tenant specification)
+//  2. JWT claims (tenant_id field in auth token)
+//  3. Subdomain (tenant1.api.cedrospay.com → tenant1)
+//  4. Default tenant for backwards compatibility
 //
 // This middleware is OPTIONAL - single-tenant deployments don't need it.
 // Multi-tenant deployments should enable it via config.

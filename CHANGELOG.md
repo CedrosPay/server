@@ -5,6 +5,53 @@ All notable changes to Cedros Pay Server will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.0.1] - 2025-11-11
+
+### Added
+- Stripe session verification endpoint `GET /paywall/v1/stripe-session/verify`
+  - Verify Stripe checkout sessions were completed before granting content access
+  - Returns payment details (resource_id, amount, customer, metadata) on success
+  - Returns 404 if session not found or payment incomplete
+  - Recommended for all Stripe integrations to confirm payment before content delivery
+- x402 transaction re-access verification endpoint `GET /paywall/v1/x402-transaction/verify`
+  - Verify previously completed x402 transactions for re-access scenarios
+  - Returns payment details (resource_id, wallet, amount, metadata) on success
+  - Enables users to re-access paid content without re-paying
+  - Frontend should verify wallet address matches connected wallet before granting access
+- CORS environment variable support (`CORS_ALLOWED_ORIGINS`)
+  - Allow comma-separated list of allowed origins via environment variable
+  - Simplifies deployment configuration for cross-origin requests
+- Environment variable overrides for storage configuration
+  - `POSTGRES_URL` for storage backend PostgreSQL connection
+  - `MONGODB_URL` and `MONGODB_DATABASE` for MongoDB storage
+- Production deployment automation script and documentation
+  - Complete GitHub Actions workflow for automated deployments
+  - Deployment setup guide with server preparation instructions
+  - Production data population script for initializing databases
+
+### Fixed
+- Environment variable naming consistency
+  - Updated all Stripe env vars to use `CEDROS_` prefix (e.g., `CEDROS_STRIPE_SECRET_KEY`)
+  - Updated x402 env vars to use `CEDROS_` prefix (e.g., `CEDROS_X402_RPC_URL`)
+  - Callback and monitoring webhooks use correct env var names
+- Corrected x402 wallet environment variable from `X402_WALLET_PRIVATE_KEY` to `X402_SERVER_WALLET_1`
+  - Supports multiple server wallets with `_1`, `_2`, etc. suffix
+- Go version requirement updated to 1.24 in Dockerfile and CI/CD workflows
+  - Matches go.mod requirement to prevent build failures
+- Removed `.env.example` copy from Dockerfile (excluded by .dockerignore)
+- Set Stripe mode to "live" in production configuration
+- Updated demo product Stripe price IDs to valid production values
+
+### Changed
+- Simplified deployment configuration by including production.yaml in Docker image
+  - Removed production.yaml from .gitignore and .dockerignore
+  - Baked configuration into image with environment variable overrides
+  - Removed unnecessary volume mount for config directory
+- Tests disabled in deployment workflow for faster deployments
+  - CI/CD optimized for rapid production updates
+
 ## [1.0.0] - 2025-11-10
 
 ### Initial Release

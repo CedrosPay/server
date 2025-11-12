@@ -16,25 +16,25 @@ const (
 	ErrCodeTransactionFailed       ErrorCode = "transaction_failed"
 
 	// Recipient/sender validation failures
-	ErrCodeInvalidRecipient        ErrorCode = "invalid_recipient"
-	ErrCodeInvalidSender           ErrorCode = "invalid_sender"
+	ErrCodeInvalidRecipient         ErrorCode = "invalid_recipient"
+	ErrCodeInvalidSender            ErrorCode = "invalid_sender"
 	ErrCodeUnauthorizedRefundIssuer ErrorCode = "unauthorized_refund_issuer"
 
 	// Amount/token validation failures
-	ErrCodeAmountBelowMinimum   ErrorCode = "amount_below_minimum"
-	ErrCodeAmountMismatch       ErrorCode = "amount_mismatch"
-	ErrCodeInsufficientFunds    ErrorCode = "insufficient_funds_sol"
+	ErrCodeAmountBelowMinimum     ErrorCode = "amount_below_minimum"
+	ErrCodeAmountMismatch         ErrorCode = "amount_mismatch"
+	ErrCodeInsufficientFunds      ErrorCode = "insufficient_funds_sol"
 	ErrCodeInsufficientFundsToken ErrorCode = "insufficient_funds_token"
-	ErrCodeInvalidTokenMint     ErrorCode = "invalid_token_mint"
+	ErrCodeInvalidTokenMint       ErrorCode = "invalid_token_mint"
 
 	// SPL transfer validation failures
-	ErrCodeNotSPLTransfer       ErrorCode = "not_spl_transfer"
-	ErrCodeMissingTokenAccount  ErrorCode = "missing_token_account"
-	ErrCodeInvalidTokenProgram  ErrorCode = "invalid_token_program"
+	ErrCodeNotSPLTransfer      ErrorCode = "not_spl_transfer"
+	ErrCodeMissingTokenAccount ErrorCode = "missing_token_account"
+	ErrCodeInvalidTokenProgram ErrorCode = "invalid_token_program"
 
 	// Memo/metadata validation failures
-	ErrCodeMissingMemo    ErrorCode = "missing_memo"
-	ErrCodeInvalidMemo    ErrorCode = "invalid_memo"
+	ErrCodeMissingMemo ErrorCode = "missing_memo"
+	ErrCodeInvalidMemo ErrorCode = "invalid_memo"
 
 	// Replay protection
 	ErrCodePaymentAlreadyUsed ErrorCode = "payment_already_used"
@@ -47,49 +47,49 @@ const (
 
 // Validation Errors (Request input validation)
 const (
-	ErrCodeMissingField      ErrorCode = "missing_field"
-	ErrCodeInvalidField      ErrorCode = "invalid_field"
-	ErrCodeInvalidAmount     ErrorCode = "invalid_amount"
-	ErrCodeInvalidWallet     ErrorCode = "invalid_wallet"
-	ErrCodeInvalidResource   ErrorCode = "invalid_resource"
-	ErrCodeInvalidCoupon     ErrorCode = "invalid_coupon"
-	ErrCodeInvalidCartItem   ErrorCode = "invalid_cart_item"
-	ErrCodeEmptyCart         ErrorCode = "empty_cart"
+	ErrCodeMissingField    ErrorCode = "missing_field"
+	ErrCodeInvalidField    ErrorCode = "invalid_field"
+	ErrCodeInvalidAmount   ErrorCode = "invalid_amount"
+	ErrCodeInvalidWallet   ErrorCode = "invalid_wallet"
+	ErrCodeInvalidResource ErrorCode = "invalid_resource"
+	ErrCodeInvalidCoupon   ErrorCode = "invalid_coupon"
+	ErrCodeInvalidCartItem ErrorCode = "invalid_cart_item"
+	ErrCodeEmptyCart       ErrorCode = "empty_cart"
 )
 
 // Resource/State Errors (Resource not found or in wrong state)
 const (
-	ErrCodeResourceNotFound   ErrorCode = "resource_not_found"
-	ErrCodeCartNotFound       ErrorCode = "cart_not_found"
-	ErrCodeRefundNotFound     ErrorCode = "refund_not_found"
-	ErrCodeProductNotFound    ErrorCode = "product_not_found"
-	ErrCodeCouponNotFound     ErrorCode = "coupon_not_found"
-	ErrCodeSessionNotFound    ErrorCode = "session_not_found"
+	ErrCodeResourceNotFound ErrorCode = "resource_not_found"
+	ErrCodeCartNotFound     ErrorCode = "cart_not_found"
+	ErrCodeRefundNotFound   ErrorCode = "refund_not_found"
+	ErrCodeProductNotFound  ErrorCode = "product_not_found"
+	ErrCodeCouponNotFound   ErrorCode = "coupon_not_found"
+	ErrCodeSessionNotFound  ErrorCode = "session_not_found"
 
-	ErrCodeCartAlreadyPaid    ErrorCode = "cart_already_paid"
+	ErrCodeCartAlreadyPaid        ErrorCode = "cart_already_paid"
 	ErrCodeRefundAlreadyProcessed ErrorCode = "refund_already_processed"
 )
 
 // Coupon-Specific Errors
 const (
-	ErrCodeCouponExpired         ErrorCode = "coupon_expired"
-	ErrCodeCouponUsageLimitReached ErrorCode = "coupon_usage_limit_reached"
-	ErrCodeCouponNotApplicable   ErrorCode = "coupon_not_applicable"
+	ErrCodeCouponExpired            ErrorCode = "coupon_expired"
+	ErrCodeCouponUsageLimitReached  ErrorCode = "coupon_usage_limit_reached"
+	ErrCodeCouponNotApplicable      ErrorCode = "coupon_not_applicable"
 	ErrCodeCouponWrongPaymentMethod ErrorCode = "coupon_wrong_payment_method"
 )
 
 // External Service Errors (Stripe, RPC, etc.)
 const (
-	ErrCodeStripeError      ErrorCode = "stripe_error"
-	ErrCodeRPCError         ErrorCode = "rpc_error"
-	ErrCodeNetworkError     ErrorCode = "network_error"
+	ErrCodeStripeError  ErrorCode = "stripe_error"
+	ErrCodeRPCError     ErrorCode = "rpc_error"
+	ErrCodeNetworkError ErrorCode = "network_error"
 )
 
 // Internal/System Errors
 const (
-	ErrCodeInternalError    ErrorCode = "internal_error"
-	ErrCodeDatabaseError    ErrorCode = "database_error"
-	ErrCodeConfigError      ErrorCode = "config_error"
+	ErrCodeInternalError ErrorCode = "internal_error"
+	ErrCodeDatabaseError ErrorCode = "database_error"
+	ErrCodeConfigError   ErrorCode = "config_error"
 )
 
 // IsRetryable returns whether an error code represents a retryable error.

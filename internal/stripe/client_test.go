@@ -69,19 +69,19 @@ func TestConvertMetadata(t *testing.T) {
 		wantFields map[string]string
 	}{
 		{
-			name: "nil metadata adds resource_id",
-			metadata: nil,
+			name:       "nil metadata adds resource_id",
+			metadata:   nil,
 			resourceID: "article-1",
-			wantLen: 1,
+			wantLen:    1,
 			wantFields: map[string]string{
 				"resource_id": "article-1",
 			},
 		},
 		{
-			name: "empty metadata adds resource_id",
-			metadata: map[string]string{},
+			name:       "empty metadata adds resource_id",
+			metadata:   map[string]string{},
 			resourceID: "article-1",
-			wantLen: 1,
+			wantLen:    1,
 			wantFields: map[string]string{
 				"resource_id": "article-1",
 			},
@@ -89,14 +89,14 @@ func TestConvertMetadata(t *testing.T) {
 		{
 			name: "existing metadata preserved",
 			metadata: map[string]string{
-				"user_id": "123",
+				"user_id":  "123",
 				"campaign": "summer",
 			},
 			resourceID: "article-1",
-			wantLen: 3,
+			wantLen:    3,
 			wantFields: map[string]string{
-				"user_id": "123",
-				"campaign": "summer",
+				"user_id":     "123",
+				"campaign":    "summer",
 				"resource_id": "article-1",
 			},
 		},
@@ -104,13 +104,13 @@ func TestConvertMetadata(t *testing.T) {
 			name: "existing resource_id not overwritten",
 			metadata: map[string]string{
 				"resource_id": "existing-resource",
-				"other": "value",
+				"other":       "value",
 			},
 			resourceID: "new-resource",
-			wantLen: 2,
+			wantLen:    2,
 			wantFields: map[string]string{
 				"resource_id": "existing-resource", // Should NOT be overwritten
-				"other": "value",
+				"other":       "value",
 			},
 		},
 	}
@@ -294,12 +294,12 @@ func TestWebhookEvent_Structure(t *testing.T) {
 
 func TestParseWebhook_MetadataHandling(t *testing.T) {
 	tests := []struct {
-		name        string
-		eventType   string
-		metadata    map[string]string
-		wantErr     bool
-		wantErrMsg  string
-		wantResID   string
+		name       string
+		eventType  string
+		metadata   map[string]string
+		wantErr    bool
+		wantErrMsg string
+		wantResID  string
 	}{
 		{
 			name:      "valid metadata with resource_id",
@@ -339,10 +339,10 @@ func TestParseWebhook_MetadataHandling(t *testing.T) {
 			wantErrMsg: "missing resource_id",
 		},
 		{
-			name:      "empty metadata should error",
-			eventType: "checkout.session.completed",
-			metadata:  map[string]string{},
-			wantErr:   true,
+			name:       "empty metadata should error",
+			eventType:  "checkout.session.completed",
+			metadata:   map[string]string{},
+			wantErr:    true,
 			wantErrMsg: "missing resource_id",
 		},
 		{

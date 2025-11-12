@@ -47,7 +47,7 @@ func (s *MongoDBStore) DequeueWebhooks(ctx context.Context, limit int) ([]Pendin
 	coll := s.db.Collection(webhookQueueCollection)
 
 	filter := bson.M{
-		"status": WebhookStatusPending,
+		"status":        WebhookStatusPending,
 		"nextattemptat": bson.M{"$lte": time.Now().UTC()},
 	}
 
@@ -76,8 +76,8 @@ func (s *MongoDBStore) MarkWebhookProcessing(ctx context.Context, webhookID stri
 	filter := bson.M{"id": webhookID}
 	update := bson.M{
 		"$set": bson.M{
-			"status":         WebhookStatusProcessing,
-			"lastattemptat":  time.Now().UTC(),
+			"status":        WebhookStatusProcessing,
+			"lastattemptat": time.Now().UTC(),
 		},
 		"$inc": bson.M{"attempts": 1},
 	}
@@ -140,10 +140,10 @@ func (s *MongoDBStore) MarkWebhookFailed(ctx context.Context, webhookID string, 
 		// Schedule retry
 		update = bson.M{
 			"$set": bson.M{
-				"status":         WebhookStatusPending,
-				"lasterror":      errorMsg,
-				"lastattemptat":  time.Now().UTC(),
-				"nextattemptat":  nextAttemptAt,
+				"status":        WebhookStatusPending,
+				"lasterror":     errorMsg,
+				"lastattemptat": time.Now().UTC(),
+				"nextattemptat": nextAttemptAt,
 			},
 		}
 	}
@@ -210,9 +210,9 @@ func (s *MongoDBStore) RetryWebhook(ctx context.Context, webhookID string) error
 	filter := bson.M{"id": webhookID}
 	update := bson.M{
 		"$set": bson.M{
-			"status":         WebhookStatusPending,
-			"nextattemptat":  time.Now().UTC(),
-			"lasterror":      "",
+			"status":        WebhookStatusPending,
+			"nextattemptat": time.Now().UTC(),
+			"lasterror":     "",
 		},
 	}
 

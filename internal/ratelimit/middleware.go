@@ -14,25 +14,25 @@ import (
 // Config holds rate limiting configuration.
 type Config struct {
 	// Global rate limiting (across all users)
-	GlobalEnabled      bool
-	GlobalLimit        int           // requests per window
-	GlobalWindow       time.Duration // time window
-	GlobalBurst        int           // burst capacity
+	GlobalEnabled bool
+	GlobalLimit   int           // requests per window
+	GlobalWindow  time.Duration // time window
+	GlobalBurst   int           // burst capacity
 
 	// Per-wallet rate limiting (identified by wallet address)
-	PerWalletEnabled   bool
-	PerWalletLimit     int
-	PerWalletWindow    time.Duration
-	PerWalletBurst     int
+	PerWalletEnabled bool
+	PerWalletLimit   int
+	PerWalletWindow  time.Duration
+	PerWalletBurst   int
 
 	// Per-IP rate limiting (fallback when wallet not identified)
-	PerIPEnabled       bool
-	PerIPLimit         int
-	PerIPWindow        time.Duration
-	PerIPBurst         int
+	PerIPEnabled bool
+	PerIPLimit   int
+	PerIPWindow  time.Duration
+	PerIPBurst   int
 
 	// Metrics collector (optional)
-	Metrics            *metrics.Metrics
+	Metrics *metrics.Metrics
 }
 
 // rateLimitResponse represents the JSON error response for rate limit exceeded.

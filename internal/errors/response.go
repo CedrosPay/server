@@ -13,10 +13,10 @@ type ErrorResponse struct {
 
 // ErrorDetail contains the error code, message, and optional context.
 type ErrorDetail struct {
-	Code      ErrorCode              `json:"code"`                // Machine-readable error code
-	Message   string                 `json:"message"`             // Human-readable error message
-	Retryable bool                   `json:"retryable"`           // Whether the client should retry
-	Details   map[string]interface{} `json:"details,omitempty"`   // Optional context (resourceId, etc.)
+	Code      ErrorCode              `json:"code"`              // Machine-readable error code
+	Message   string                 `json:"message"`           // Human-readable error message
+	Retryable bool                   `json:"retryable"`         // Whether the client should retry
+	Details   map[string]interface{} `json:"details,omitempty"` // Optional context (resourceId, etc.)
 }
 
 // NewErrorResponse creates a standardized error response.

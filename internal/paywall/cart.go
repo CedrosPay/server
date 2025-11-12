@@ -32,23 +32,23 @@ type CartQuoteItem struct {
 
 // CartQuoteResponse contains the generated quote for a cart.
 type CartQuoteResponse struct {
-	CartID      string            `json:"cartId"`              // Unique cart identifier
-	Quote       *CryptoQuote      `json:"quote"`               // x402 requirement for the cart total (unwrapped)
-	Items       []CartItem        `json:"items"`               // Itemized breakdown
-	TotalAmount float64           `json:"totalAmount"`         // Final total after all discounts
-	Metadata    map[string]string `json:"metadata,omitempty"`  // Cart metadata including coupon info
-	ExpiresAt   time.Time         `json:"expiresAt"`           // When this cart quote expires
+	CartID      string            `json:"cartId"`             // Unique cart identifier
+	Quote       *CryptoQuote      `json:"quote"`              // x402 requirement for the cart total (unwrapped)
+	Items       []CartItem        `json:"items"`              // Itemized breakdown
+	TotalAmount float64           `json:"totalAmount"`        // Final total after all discounts
+	Metadata    map[string]string `json:"metadata,omitempty"` // Cart metadata including coupon info
+	ExpiresAt   time.Time         `json:"expiresAt"`          // When this cart quote expires
 }
 
 // CartItem represents an item in the quote response.
 type CartItem struct {
-	ResourceID      string   `json:"resource"`
-	Quantity        int64    `json:"quantity"`
-	PriceAmount     float64  `json:"priceAmount"`               // Price per unit (after catalog coupons)
-	OriginalPrice   float64  `json:"originalPrice"`             // Original price before any discounts
-	Token           string   `json:"token"`                     // Token symbol
-	Description     string   `json:"description,omitempty"`
-	AppliedCoupons  []string `json:"appliedCoupons,omitempty"`  // Catalog coupons applied to this item
+	ResourceID     string   `json:"resource"`
+	Quantity       int64    `json:"quantity"`
+	PriceAmount    float64  `json:"priceAmount"`   // Price per unit (after catalog coupons)
+	OriginalPrice  float64  `json:"originalPrice"` // Original price before any discounts
+	Token          string   `json:"token"`         // Token symbol
+	Description    string   `json:"description,omitempty"`
+	AppliedCoupons []string `json:"appliedCoupons,omitempty"` // Catalog coupons applied to this item
 }
 
 // GetCartQuote retrieves an existing cart quote by ID.
@@ -72,10 +72,10 @@ func (s *Service) GenerateCartQuote(ctx context.Context, req CartQuoteRequest) (
 	// Apply catalog-level coupons to each item's price
 	var storageItems []storage.CartItem
 	var responseItems []CartItem
-	var totalMoney money.Money // Use Money for precise arithmetic
-	var cryptoAsset money.Asset // Asset for all items (must be consistent)
-	var token string // All items must use same token
-	var allAppliedCatalogCoupons []string // Track all catalog coupons applied across items
+	var totalMoney money.Money               // Use Money for precise arithmetic
+	var cryptoAsset money.Asset              // Asset for all items (must be consistent)
+	var token string                         // All items must use same token
+	var allAppliedCatalogCoupons []string    // Track all catalog coupons applied across items
 	seenCouponCodes := make(map[string]bool) // O(1) deduplication instead of O(n) linear search
 
 	for i, item := range req.Items {
@@ -153,10 +153,10 @@ func (s *Service) GenerateCartQuote(ctx context.Context, req CartQuoteRequest) (
 
 		// Store item with locked discounted price (already Money)
 		storageItems = append(storageItems, storage.CartItem{
-			ResourceID:  item.ResourceID,
-			Quantity:    item.Quantity,
-			Price:       itemPriceMoney, // Already Money with coupons applied
-			Metadata:    item.Metadata,
+			ResourceID: item.ResourceID,
+			Quantity:   item.Quantity,
+			Price:      itemPriceMoney, // Already Money with coupons applied
+			Metadata:   item.Metadata,
 		})
 
 		// Build response item with original price, discounted price, and applied coupons
@@ -249,7 +249,7 @@ func (s *Service) GenerateCartQuote(ctx context.Context, req CartQuoteRequest) (
 	cartQuote := storage.CartQuote{
 		ID:        cartID,
 		Items:     storageItems,
-		Total:     totalMoney, // Already Money type with precise integer arithmetic
+		Total:     totalMoney,   // Already Money type with precise integer arithmetic
 		Metadata:  cartMetadata, // Use updated metadata with coupon info
 		CreatedAt: now,
 		ExpiresAt: expiresAt,
@@ -385,7 +385,7 @@ func (s *Service) authorizeCart(ctx context.Context, cartID, paymentHeader, coup
 		placeholderTx := storage.PaymentTransaction{
 			Signature:  proof.Signature,
 			ResourceID: cartID,
-			Wallet:     "", // Will be updated after verification
+			Wallet:     "",                           // Will be updated after verification
 			Amount:     money.Zero(cart.Total.Asset), // Will be updated after verification
 			CreatedAt:  now,
 			Metadata:   map[string]string{"status": "verifying"},

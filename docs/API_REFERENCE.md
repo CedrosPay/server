@@ -418,11 +418,72 @@ Create Stripe checkout session for a single product.
 
 **Use Case:** Single-item purchases (one article, one course, one API credit package)
 
+### Verify Stripe Session
+
+**GET {prefix}/paywall/v1/stripe-session/verify?session_id={session_id}**
+
+Verify that a Stripe checkout session was completed and paid. This endpoint prevents payment bypass attacks where users manually enter success URLs without paying.
+
+**Security:** Frontend should call this endpoint before granting access to purchased content. Simply receiving a `session_id` in the URL is NOT proof of payment.
+
+**Query Parameters:**
+- `session_id` (required): Stripe checkout session ID from redirect URL
+
+**Success Response (200):**
+```json
+{
+  "verified": true,
+  "resource_id": "demo-content",
+  "paid_at": "2025-01-15T10:30:00Z",
+  "amount": "$1.00 USD",
+  "customer": "cus_abc123",
+  "metadata": {
+    "user_id": "12345",
+    "item_name": "Premium Article"
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "error": {
+    "code": "session_not_found",
+    "message": "Payment not completed or session invalid"
+  }
+}
+```
+
+**Integration Flow:**
+```javascript
+// 1. User completes Stripe payment
+// 2. Stripe redirects to: your-site.com/success?session_id=cs_test_abc123
+// 3. Frontend calls verification endpoint
+const response = await fetch(
+  `/paywall/v1/stripe-session/verify?session_id=${sessionId}`
+);
+
+if (response.ok) {
+  const data = await response.json();
+  if (data.verified) {
+    // Payment confirmed! Grant access to content
+    window.open('/protected-content.pdf', '_blank');
+  }
+} else {
+  // Payment not verified - show error
+  showError('Payment verification failed');
+}
+```
+
+**Use Case:** Secure content delivery after Stripe payment. Prevents users from bypassing payment by manually entering success URLs.
+
 ### Stripe Success Page
 
 **GET {prefix}/stripe/success**
 
 Redirect page after successful Stripe payment. Query parameter: `session_id`
+
+**Note:** This is a fallback page. For custom experiences, pass `successUrl` when creating the session and use the verification endpoint above to confirm payment.
 
 ### Stripe Cancel Page
 
@@ -533,6 +594,75 @@ Verify payment proof for any resource type (regular, cart, or refund). Resource 
 - `"regular"` - Standard single-item payments
 - `"cart"` - Multi-item cart payments
 - `"refund"` - Refund verification
+
+**Note:** This endpoint consumes the transaction signature. Each signature can only be verified once to prevent replay attacks.
+
+### Verify x402 Transaction (Re-Access)
+
+**GET {prefix}/paywall/v1/x402-transaction/verify?signature={signature}**
+
+Verify that an x402 transaction was previously completed and paid. This endpoint allows re-access verification for already-paid transactions.
+
+**Use Case:** User paid with crypto, stored transaction signature, and now wants to re-access content without paying again.
+
+**Query Parameters:**
+- `signature` (required): Solana transaction signature from original payment
+
+**Success Response (200):**
+```json
+{
+  "verified": true,
+  "resource_id": "demo-content",
+  "wallet": "2TRi...",
+  "paid_at": "2025-01-15T10:30:00Z",
+  "amount": "$1.00 USDC",
+  "metadata": {
+    "userId": "12345",
+    "email": "user@example.com"
+  }
+}
+```
+
+**Error Response (404):**
+```json
+{
+  "error": {
+    "code": "transaction_not_found",
+    "message": "Transaction not found or not verified"
+  }
+}
+```
+
+**Integration Flow:**
+```javascript
+// 1. User completes payment and stores signature
+const signature = txResult.signature;
+localStorage.setItem('ebook_tx', signature);
+
+// 2. User returns later, retrieve stored signature
+const savedTx = localStorage.getItem('ebook_tx');
+const currentWallet = await getConnectedWallet();
+
+// 3. Verify transaction is still valid
+const response = await fetch(
+  `/paywall/v1/x402-transaction/verify?signature=${savedTx}`
+);
+
+if (response.ok) {
+  const data = await response.json();
+
+  // 4. Check if wallet matches (frontend logic)
+  if (data.wallet === currentWallet) {
+    // Same wallet that paid - grant re-access
+    window.open('/ebook.pdf', '_blank');
+  } else {
+    // Different wallet - require new payment
+    showMessage('This content was purchased by a different wallet');
+  }
+}
+```
+
+**Security:** Frontend should verify that `data.wallet` matches the currently connected wallet before granting access. This prevents sharing transaction signatures between users.
 
 ### Build Gasless Transaction
 

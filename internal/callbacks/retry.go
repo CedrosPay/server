@@ -38,13 +38,13 @@ func DefaultRetryConfig() RetryConfig {
 
 // RetryableClient posts payment events with exponential backoff retry logic.
 type RetryableClient struct {
-	cfg         config.CallbacksConfig
-	retryCfg    RetryConfig
-	httpClient  *http.Client
-	logger      zerolog.Logger
-	tmpl        *template.Template
-	dlqStore    DLQStore         // Dead Letter Queue for failed webhooks
-	metrics     *metrics.Metrics // Prometheus metrics collector
+	cfg        config.CallbacksConfig
+	retryCfg   RetryConfig
+	httpClient *http.Client
+	logger     zerolog.Logger
+	tmpl       *template.Template
+	dlqStore   DLQStore         // Dead Letter Queue for failed webhooks
+	metrics    *metrics.Metrics // Prometheus metrics collector
 }
 
 // DLQStore persists failed webhook attempts for manual retry or analysis.
@@ -56,15 +56,15 @@ type DLQStore interface {
 
 // FailedWebhook represents a webhook that exhausted all retry attempts.
 type FailedWebhook struct {
-	ID           string            `json:"id"`
-	URL          string            `json:"url"`
-	Payload      json.RawMessage   `json:"payload"`
-	Headers      map[string]string `json:"headers"`
-	EventType    string            `json:"eventType"` // "payment" or "refund"
-	Attempts     int               `json:"attempts"`
-	LastError    string            `json:"lastError"`
-	LastAttempt  time.Time         `json:"lastAttempt"`
-	CreatedAt    time.Time         `json:"createdAt"`
+	ID          string            `json:"id"`
+	URL         string            `json:"url"`
+	Payload     json.RawMessage   `json:"payload"`
+	Headers     map[string]string `json:"headers"`
+	EventType   string            `json:"eventType"` // "payment" or "refund"
+	Attempts    int               `json:"attempts"`
+	LastError   string            `json:"lastError"`
+	LastAttempt time.Time         `json:"lastAttempt"`
+	CreatedAt   time.Time         `json:"createdAt"`
 }
 
 // RetryOption customizes the retry client behavior.
@@ -110,10 +110,10 @@ func NewRetryableClient(cfg config.CallbacksConfig, opts ...RetryOption) Notifie
 	}
 
 	client := &RetryableClient{
-		cfg:         cfg,
-		retryCfg:    DefaultRetryConfig(),
-		httpClient:  httputil.NewClient(timeout),
-		logger:      zerolog.Nop(), // No-op logger by default
+		cfg:        cfg,
+		retryCfg:   DefaultRetryConfig(),
+		httpClient: httputil.NewClient(timeout),
+		logger:     zerolog.Nop(), // No-op logger by default
 	}
 
 	for _, opt := range opts {

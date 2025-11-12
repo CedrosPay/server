@@ -23,8 +23,8 @@ type SolanaVerifier struct {
 	rpcClient               *rpc.Client
 	wsClient                *ws.Client
 	clock                   func() time.Time
-	serverWallets           []solana.PrivateKey  // Server wallets for gasless and token account creation
-	walletIndex             atomic.Uint64        // Round-robin counter for wallet selection
+	serverWallets           []solana.PrivateKey // Server wallets for gasless and token account creation
+	walletIndex             atomic.Uint64       // Round-robin counter for wallet selection
 	gaslessEnabled          bool
 	autoCreateTokenAccounts bool
 	txQueue                 *TransactionQueue    // Transaction queue for rate limiting

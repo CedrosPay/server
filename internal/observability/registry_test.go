@@ -55,11 +55,11 @@ func (h *mockPaymentHook) getCompletedCount() int {
 }
 
 type mockWebhookHook struct {
-	mu               sync.Mutex
-	queuedEvents     []WebhookQueuedEvent
-	deliveredEvents  []WebhookDeliveredEvent
-	failedEvents     []WebhookFailedEvent
-	retriedEvents    []WebhookRetriedEvent
+	mu              sync.Mutex
+	queuedEvents    []WebhookQueuedEvent
+	deliveredEvents []WebhookDeliveredEvent
+	failedEvents    []WebhookFailedEvent
+	retriedEvents   []WebhookRetriedEvent
 }
 
 func (h *mockWebhookHook) Name() string { return "mock_webhook" }

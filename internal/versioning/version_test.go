@@ -63,8 +63,8 @@ func TestVersionString(t *testing.T) {
 
 func TestNegotiateVersion(t *testing.T) {
 	tests := []struct {
-		name           string
-		headers        map[string]string
+		name            string
+		headers         map[string]string
 		expectedVersion Version
 	}{
 		{
@@ -141,27 +141,27 @@ func TestNegotiateVersion(t *testing.T) {
 
 func TestNegotiationMiddleware(t *testing.T) {
 	tests := []struct {
-		name                  string
-		requestHeaders        map[string]string
-		expectedVersion       Version
+		name                   string
+		requestHeaders         map[string]string
+		expectedVersion        Version
 		expectedResponseHeader string
 	}{
 		{
-			name:                  "adds version to context and response headers",
-			requestHeaders:        map[string]string{"X-API-Version": "v2"},
-			expectedVersion:       V2,
+			name:                   "adds version to context and response headers",
+			requestHeaders:         map[string]string{"X-API-Version": "v2"},
+			expectedVersion:        V2,
 			expectedResponseHeader: "v2",
 		},
 		{
-			name:                  "defaults to v1",
-			requestHeaders:        map[string]string{},
-			expectedVersion:       V1,
+			name:                   "defaults to v1",
+			requestHeaders:         map[string]string{},
+			expectedVersion:        V1,
 			expectedResponseHeader: "v1",
 		},
 		{
-			name:                  "sets Vary header",
-			requestHeaders:        map[string]string{},
-			expectedVersion:       V1,
+			name:                   "sets Vary header",
+			requestHeaders:         map[string]string{},
+			expectedVersion:        V1,
 			expectedResponseHeader: "v1",
 		},
 	}

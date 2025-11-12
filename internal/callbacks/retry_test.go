@@ -158,10 +158,10 @@ func TestRetryableClient_ExhaustsRetriesAndSavesToDLQ(t *testing.T) {
 	)
 
 	event := PaymentEvent{
-		ResourceID:   "test-resource",
-		Method:       "stripe",
+		ResourceID:      "test-resource",
+		Method:          "stripe",
 		FiatAmountCents: 100,
-		FiatCurrency: "usd",
+		FiatCurrency:    "usd",
 	}
 
 	client.PaymentSucceeded(context.Background(), event)

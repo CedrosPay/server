@@ -101,30 +101,30 @@ func TestObserveSettlement(t *testing.T) {
 
 func TestObserveRPCCall(t *testing.T) {
 	tests := []struct {
-		name      string
-		method    string
-		network   string
-		duration  time.Duration
-		err       error
-		wantCalls float64
+		name       string
+		method     string
+		network    string
+		duration   time.Duration
+		err        error
+		wantCalls  float64
 		wantErrors float64
 	}{
 		{
-			name:      "successful RPC call",
-			method:    "getTransaction",
-			network:   "mainnet-beta",
-			duration:  100 * time.Millisecond,
-			err:       nil,
-			wantCalls: 1,
+			name:       "successful RPC call",
+			method:     "getTransaction",
+			network:    "mainnet-beta",
+			duration:   100 * time.Millisecond,
+			err:        nil,
+			wantCalls:  1,
 			wantErrors: 0,
 		},
 		{
-			name:      "failed RPC call with connection error",
-			method:    "getTransaction",
-			network:   "mainnet-beta",
-			duration:  100 * time.Millisecond,
-			err:       &testError{msg: "connection reset"},
-			wantCalls: 1,
+			name:       "failed RPC call with connection error",
+			method:     "getTransaction",
+			network:    "mainnet-beta",
+			duration:   100 * time.Millisecond,
+			err:        &testError{msg: "connection reset"},
+			wantCalls:  1,
 			wantErrors: 1,
 		},
 	}

@@ -193,13 +193,13 @@ func (s *Service) authorizeRefund(ctx context.Context, refundID, paymentHeader s
 
 	requirement := x402.Requirement{
 		ResourceID:            refundID,
-		RecipientOwner:        refund.RecipientWallet,                                                // Customer receives refund
-		RecipientTokenAccount: deriveTokenAccountSafe(refund.RecipientWallet, tokenMint),            // Customer's token account
-		TokenMint:             tokenMint,                                                             // From asset metadata
-		Amount:                refundAmountFloat,                                                     // Convert Money to float64
+		RecipientOwner:        refund.RecipientWallet,                                    // Customer receives refund
+		RecipientTokenAccount: deriveTokenAccountSafe(refund.RecipientWallet, tokenMint), // Customer's token account
+		TokenMint:             tokenMint,                                                 // From asset metadata
+		Amount:                refundAmountFloat,                                         // Convert Money to float64
 		Network:               s.cfg.X402.Network,
-		TokenDecimals:         tokenDecimals,                                                         // From asset metadata
-		AllowedTokens:         []string{refund.Amount.Asset.Code},                                    // Token symbol from asset
+		TokenDecimals:         tokenDecimals,                      // From asset metadata
+		AllowedTokens:         []string{refund.Amount.Asset.Code}, // Token symbol from asset
 		QuoteTTL:              refundTTL,
 		SkipPreflight:         s.cfg.X402.SkipPreflight,
 		Commitment:            s.cfg.X402.Commitment,
@@ -215,7 +215,7 @@ func (s *Service) authorizeRefund(ctx context.Context, refundID, paymentHeader s
 	placeholderTx := storage.PaymentTransaction{
 		Signature:  proof.Signature,
 		ResourceID: refundID,
-		Wallet:     "", // Will be updated after verification
+		Wallet:     "",                              // Will be updated after verification
 		Amount:     money.Zero(refund.Amount.Asset), // Will be updated after verification
 		CreatedAt:  now,
 		Metadata:   map[string]string{"status": "verifying"},

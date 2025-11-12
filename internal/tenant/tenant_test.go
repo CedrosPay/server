@@ -199,28 +199,28 @@ func TestSanitizeTenantID(t *testing.T) {
 
 func TestExtractionMiddleware(t *testing.T) {
 	tests := []struct {
-		name                  string
-		requestHeaders        map[string]string
-		host                  string
-		expectedTenant        string
+		name                   string
+		requestHeaders         map[string]string
+		host                   string
+		expectedTenant         string
 		expectedResponseHeader string
 	}{
 		{
-			name:                  "adds tenant to context and response headers",
-			requestHeaders:        map[string]string{"X-Tenant-ID": "tenant-123"},
-			expectedTenant:        "tenant-123",
+			name:                   "adds tenant to context and response headers",
+			requestHeaders:         map[string]string{"X-Tenant-ID": "tenant-123"},
+			expectedTenant:         "tenant-123",
 			expectedResponseHeader: "tenant-123",
 		},
 		{
-			name:                  "defaults to default tenant",
-			requestHeaders:        map[string]string{},
-			expectedTenant:        DefaultTenantID,
+			name:                   "defaults to default tenant",
+			requestHeaders:         map[string]string{},
+			expectedTenant:         DefaultTenantID,
 			expectedResponseHeader: DefaultTenantID,
 		},
 		{
-			name:                  "extracts from subdomain",
-			host:                  "acme.api.example.com",
-			expectedTenant:        "acme",
+			name:                   "extracts from subdomain",
+			host:                   "acme.api.example.com",
+			expectedTenant:         "acme",
 			expectedResponseHeader: "acme",
 		},
 	}

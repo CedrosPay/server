@@ -58,9 +58,9 @@ func TestFromMajor(t *testing.T) {
 
 func TestToMajor(t *testing.T) {
 	tests := []struct {
-		name   string
-		money  Money
-		want   string
+		name  string
+		money Money
+		want  string
 	}{
 		{"USD 10.50", Money{USD, 1050}, "10.50"},
 		{"USD 0.01", Money{USD, 1}, "0.01"},
@@ -200,9 +200,9 @@ func TestMulBasisPoints(t *testing.T) {
 		want        int64
 		wantErr     bool
 	}{
-		{"2.5% of $100", Money{USD, 10000}, 250, 250, false},   // $100 * 2.5% = $2.50
-		{"10% of $50", Money{USD, 5000}, 1000, 500, false},     // $50 * 10% = $5.00
-		{"100% of $10", Money{USD, 1000}, 10000, 1000, false},  // $10 * 100% = $10
+		{"2.5% of $100", Money{USD, 10000}, 250, 250, false},  // $100 * 2.5% = $2.50
+		{"10% of $50", Money{USD, 5000}, 1000, 500, false},    // $50 * 10% = $5.00
+		{"100% of $10", Money{USD, 1000}, 10000, 1000, false}, // $10 * 100% = $10
 		{"0%", Money{USD, 10000}, 0, 0, false},
 		{"rounding half-up", Money{USD, 1005}, 1000, 101, false}, // $10.05 * 10% = $1.005 → $1.01
 	}
@@ -228,8 +228,8 @@ func TestMulPercent(t *testing.T) {
 		percent int64
 		want    int64
 	}{
-		{"10% of $100", Money{USD, 10000}, 10, 1000},  // $100 * 10% = $10
-		{"50% of $20", Money{USD, 2000}, 50, 1000},    // $20 * 50% = $10
+		{"10% of $100", Money{USD, 10000}, 10, 1000}, // $100 * 10% = $10
+		{"50% of $20", Money{USD, 2000}, 50, 1000},   // $20 * 50% = $10
 	}
 
 	for _, tt := range tests {
@@ -378,39 +378,39 @@ func TestRoundUpToCents(t *testing.T) {
 		wantAtomic int64
 	}{
 		// USDC (6 decimals) - positive amounts
-		{"USDC positive fractional small", Money{USDC, 1}, 10000},           // 0.000001 → 0.01
-		{"USDC positive fractional large", Money{USDC, 9999}, 10000},        // 0.009999 → 0.01
-		{"USDC positive at boundary", Money{USDC, 10000}, 10000},            // 0.01 → 0.01
-		{"USDC positive above boundary", Money{USDC, 10001}, 20000},         // 0.010001 → 0.02
-		{"USDC positive $1.50", Money{USDC, 1500000}, 1500000},              // 1.50 → 1.50
-		{"USDC positive $1.501", Money{USDC, 1501000}, 1510000},             // 1.501 → 1.51
+		{"USDC positive fractional small", Money{USDC, 1}, 10000},    // 0.000001 → 0.01
+		{"USDC positive fractional large", Money{USDC, 9999}, 10000}, // 0.009999 → 0.01
+		{"USDC positive at boundary", Money{USDC, 10000}, 10000},     // 0.01 → 0.01
+		{"USDC positive above boundary", Money{USDC, 10001}, 20000},  // 0.010001 → 0.02
+		{"USDC positive $1.50", Money{USDC, 1500000}, 1500000},       // 1.50 → 1.50
+		{"USDC positive $1.501", Money{USDC, 1501000}, 1510000},      // 1.501 → 1.51
 
 		// USDC (6 decimals) - negative amounts (refunds)
-		{"USDC negative fractional small", Money{USDC, -1}, 0},              // -0.000001 → 0.00
-		{"USDC negative fractional large", Money{USDC, -9999}, 0},           // -0.009999 → 0.00
-		{"USDC negative at boundary", Money{USDC, -10000}, -10000},          // -0.01 → -0.01
-		{"USDC negative above boundary", Money{USDC, -10001}, -10000},       // -0.010001 → -0.01
-		{"USDC negative $1.50", Money{USDC, -1500000}, -1500000},            // -1.50 → -1.50
-		{"USDC negative $1.501", Money{USDC, -1501000}, -1500000},           // -1.501 → -1.50
+		{"USDC negative fractional small", Money{USDC, -1}, 0},        // -0.000001 → 0.00
+		{"USDC negative fractional large", Money{USDC, -9999}, 0},     // -0.009999 → 0.00
+		{"USDC negative at boundary", Money{USDC, -10000}, -10000},    // -0.01 → -0.01
+		{"USDC negative above boundary", Money{USDC, -10001}, -10000}, // -0.010001 → -0.01
+		{"USDC negative $1.50", Money{USDC, -1500000}, -1500000},      // -1.50 → -1.50
+		{"USDC negative $1.501", Money{USDC, -1501000}, -1500000},     // -1.501 → -1.50
 
 		// USD (2 decimals) - should return unchanged
-		{"USD positive no rounding needed", Money{USD, 1050}, 1050},         // $10.50 → $10.50
-		{"USD negative no rounding needed", Money{USD, -1050}, -1050},       // -$10.50 → -$10.50
+		{"USD positive no rounding needed", Money{USD, 1050}, 1050},   // $10.50 → $10.50
+		{"USD negative no rounding needed", Money{USD, -1050}, -1050}, // -$10.50 → -$10.50
 
 		// SOL (9 decimals) - positive amounts
-		{"SOL positive fractional", Money{SOL, 1000000}, 10000000},          // 0.001 → 0.01
-		{"SOL positive at boundary", Money{SOL, 10000000}, 10000000},        // 0.01 → 0.01
-		{"SOL positive above boundary", Money{SOL, 10000001}, 20000000},     // 0.010000001 → 0.02
+		{"SOL positive fractional", Money{SOL, 1000000}, 10000000},      // 0.001 → 0.01
+		{"SOL positive at boundary", Money{SOL, 10000000}, 10000000},    // 0.01 → 0.01
+		{"SOL positive above boundary", Money{SOL, 10000001}, 20000000}, // 0.010000001 → 0.02
 
 		// SOL (9 decimals) - negative amounts
-		{"SOL negative fractional", Money{SOL, -1000000}, 0},                // -0.001 → 0.00
-		{"SOL negative at boundary", Money{SOL, -10000000}, -10000000},      // -0.01 → -0.01
-		{"SOL negative above boundary", Money{SOL, -10000001}, -10000000},   // -0.010000001 → -0.01
+		{"SOL negative fractional", Money{SOL, -1000000}, 0},              // -0.001 → 0.00
+		{"SOL negative at boundary", Money{SOL, -10000000}, -10000000},    // -0.01 → -0.01
+		{"SOL negative above boundary", Money{SOL, -10000001}, -10000000}, // -0.010000001 → -0.01
 
 		// Edge cases
-		{"USDC zero", Money{USDC, 0}, 0},                                    // 0.00 → 0.00
-		{"USDC large positive", Money{USDC, 100000000}, 100000000},          // $100 → $100
-		{"USDC large negative", Money{USDC, -100000000}, -100000000},        // -$100 → -$100
+		{"USDC zero", Money{USDC, 0}, 0},                             // 0.00 → 0.00
+		{"USDC large positive", Money{USDC, 100000000}, 100000000},   // $100 → $100
+		{"USDC large negative", Money{USDC, -100000000}, -100000000}, // -$100 → -$100
 	}
 
 	for _, tt := range tests {

@@ -17,10 +17,10 @@ import (
 
 // PostgresRepository implements Repository using PostgreSQL.
 type PostgresRepository struct {
-	db         *sql.DB
-	ownsDB     bool            // Track if we created the DB connection (for Close())
-	metrics    *metrics.Metrics // Optional: Prometheus metrics collector
-	tableName  string          // Configurable table name (default: "products")
+	db        *sql.DB
+	ownsDB    bool             // Track if we created the DB connection (for Close())
+	metrics   *metrics.Metrics // Optional: Prometheus metrics collector
+	tableName string           // Configurable table name (default: "products")
 }
 
 // Query timeout constants

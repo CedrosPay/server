@@ -38,6 +38,7 @@ EXCLUDE_PATTERNS=(
     "configs/dev.yaml"
     "configs/staging.yaml"
     "configs/production.yaml"
+    "configs/deploy.yaml"
 
     # Database files containing PII and transaction history (CRITICAL)
     "data/"

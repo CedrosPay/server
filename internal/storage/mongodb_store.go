@@ -420,8 +420,8 @@ type mongoPaymentTransaction struct {
 	Signature  string            `bson:"signature"`
 	ResourceID string            `bson:"resource_id"`
 	Wallet     string            `bson:"wallet"`
-	Amount     int64             `bson:"amount"`   // Atomic amount
-	Asset      string            `bson:"asset"`    // Asset code (e.g., "USDC")
+	Amount     int64             `bson:"amount"` // Atomic amount
+	Asset      string            `bson:"asset"`  // Asset code (e.g., "USDC")
 	CreatedAt  time.Time         `bson:"created_at"`
 	Metadata   map[string]string `bson:"metadata"`
 }

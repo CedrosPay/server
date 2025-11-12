@@ -13,6 +13,7 @@ coverage.out
 configs/*.local.yaml
 configs/local.yaml
 configs/config.yaml
+configs/deploy.yaml
 
 # IDE and OS
 .DS_Store

@@ -10,44 +10,44 @@ import (
 // Metrics holds all Prometheus metrics for Cedros Pay.
 type Metrics struct {
 	// Payment metrics
-	PaymentsTotal           *prometheus.CounterVec
-	PaymentsSuccessTotal    *prometheus.CounterVec
-	PaymentsFailedTotal     *prometheus.CounterVec
-	PaymentAmountTotal      *prometheus.CounterVec
-	PaymentDuration         *prometheus.HistogramVec
-	SettlementDuration      *prometheus.HistogramVec
+	PaymentsTotal        *prometheus.CounterVec
+	PaymentsSuccessTotal *prometheus.CounterVec
+	PaymentsFailedTotal  *prometheus.CounterVec
+	PaymentAmountTotal   *prometheus.CounterVec
+	PaymentDuration      *prometheus.HistogramVec
+	SettlementDuration   *prometheus.HistogramVec
 
 	// RPC call metrics
-	RPCCallsTotal           *prometheus.CounterVec
-	RPCCallDuration         *prometheus.HistogramVec
-	RPCErrorsTotal          *prometheus.CounterVec
+	RPCCallsTotal   *prometheus.CounterVec
+	RPCCallDuration *prometheus.HistogramVec
+	RPCErrorsTotal  *prometheus.CounterVec
 
 	// Cart metrics
-	CartCheckoutsTotal      *prometheus.CounterVec
-	CartItemsTotal          prometheus.Counter
-	CartAverageValue        prometheus.Gauge
+	CartCheckoutsTotal *prometheus.CounterVec
+	CartItemsTotal     prometheus.Counter
+	CartAverageValue   prometheus.Gauge
 
 	// Refund metrics
-	RefundsTotal            *prometheus.CounterVec
-	RefundAmountTotal       *prometheus.CounterVec
-	RefundDuration          *prometheus.HistogramVec
+	RefundsTotal      *prometheus.CounterVec
+	RefundAmountTotal *prometheus.CounterVec
+	RefundDuration    *prometheus.HistogramVec
 
 	// Webhook metrics
-	WebhooksTotal           *prometheus.CounterVec
-	WebhookRetriesTotal     *prometheus.CounterVec
-	WebhookDLQTotal         *prometheus.CounterVec
-	WebhookDuration         *prometheus.HistogramVec
+	WebhooksTotal       *prometheus.CounterVec
+	WebhookRetriesTotal *prometheus.CounterVec
+	WebhookDLQTotal     *prometheus.CounterVec
+	WebhookDuration     *prometheus.HistogramVec
 
 	// Rate limiting metrics
-	RateLimitHitsTotal      *prometheus.CounterVec
+	RateLimitHitsTotal *prometheus.CounterVec
 
 	// Database metrics
-	DBQueryDuration         *prometheus.HistogramVec
-	DBConnectionsActive     prometheus.Gauge
+	DBQueryDuration     *prometheus.HistogramVec
+	DBConnectionsActive prometheus.Gauge
 
 	// System metrics
-	ArchivalRunsTotal       prometheus.Counter
-	ArchivalRecordsDeleted  prometheus.Counter
+	ArchivalRunsTotal      prometheus.Counter
+	ArchivalRecordsDeleted prometheus.Counter
 }
 
 // New creates and registers all Prometheus metrics.
@@ -340,7 +340,7 @@ func (m *Metrics) ObserveArchival(recordsDeleted int64) {
 // Helper functions
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr ||
-	       len(s) > len(substr) && contains(s[1:], substr)
+		len(s) > len(substr) && contains(s[1:], substr)
 }
 
 func formatAttempt(attempt int) string {

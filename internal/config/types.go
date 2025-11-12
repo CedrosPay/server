@@ -45,13 +45,13 @@ func (d Duration) MarshalYAML() (interface{}, error) {
 
 // Config holds application level configuration aggregated from file and environment variables.
 type Config struct {
-	Server     ServerConfig     `yaml:"server"`
-	Logging    LoggingConfig    `yaml:"logging"`
-	Stripe     StripeConfig     `yaml:"stripe"`
-	X402       X402Config       `yaml:"x402"`
-	Paywall    PaywallConfig    `yaml:"paywall"`
-	Storage    StorageConfig    `yaml:"storage"`
-	Coupons    CouponConfig     `yaml:"coupons"`
+	Server         ServerConfig         `yaml:"server"`
+	Logging        LoggingConfig        `yaml:"logging"`
+	Stripe         StripeConfig         `yaml:"stripe"`
+	X402           X402Config           `yaml:"x402"`
+	Paywall        PaywallConfig        `yaml:"paywall"`
+	Storage        StorageConfig        `yaml:"storage"`
+	Coupons        CouponConfig         `yaml:"coupons"`
 	Callbacks      CallbacksConfig      `yaml:"callbacks"`
 	Monitoring     MonitoringConfig     `yaml:"monitoring"`
 	RateLimit      RateLimitConfig      `yaml:"rate_limit"`
@@ -61,13 +61,13 @@ type Config struct {
 
 // ServerConfig holds HTTP server configuration.
 type ServerConfig struct {
-	Address              string   `yaml:"address"`
-	ReadTimeout          Duration `yaml:"read_timeout"`
-	WriteTimeout         Duration `yaml:"write_timeout"`
-	IdleTimeout          Duration `yaml:"idle_timeout"`
-	CORSAllowedOrigins   []string `yaml:"cors_allowed_origins"`
-	RoutePrefix          string   `yaml:"route_prefix"`          // Optional prefix for all routes (e.g., "/api", "/cedros")
-	AdminMetricsAPIKey   string   `yaml:"admin_metrics_api_key"` // Optional API key to protect /metrics endpoint (leave empty to disable protection)
+	Address            string   `yaml:"address"`
+	ReadTimeout        Duration `yaml:"read_timeout"`
+	WriteTimeout       Duration `yaml:"write_timeout"`
+	IdleTimeout        Duration `yaml:"idle_timeout"`
+	CORSAllowedOrigins []string `yaml:"cors_allowed_origins"`
+	RoutePrefix        string   `yaml:"route_prefix"`          // Optional prefix for all routes (e.g., "/api", "/cedros")
+	AdminMetricsAPIKey string   `yaml:"admin_metrics_api_key"` // Optional API key to protect /metrics endpoint (leave empty to disable protection)
 }
 
 // StripeConfig holds Stripe payment integration configuration.
@@ -159,7 +159,7 @@ type CallbacksConfig struct {
 	Body              string            `yaml:"body"`
 	BodyTemplate      string            `yaml:"body_template"`
 	Timeout           Duration          `yaml:"timeout"`
-	Retry             RetryConfig       `yaml:"retry"` // Retry configuration with exponential backoff
+	Retry             RetryConfig       `yaml:"retry"`       // Retry configuration with exponential backoff
 	DLQEnabled        bool              `yaml:"dlq_enabled"` // Enable dead letter queue for failed webhooks
 	DLQPath           string            `yaml:"dlq_path"`    // File path for DLQ storage (default: ./data/webhook-dlq.json)
 }
@@ -192,17 +192,17 @@ type PostgresPoolConfig struct {
 
 // StorageConfig holds storage backend configuration.
 type StorageConfig struct {
-	Backend         string               `yaml:"backend"`           // "memory", "postgres", "mongodb", or "file"
-	PostgresURL     string               `yaml:"postgres_url"`      // PostgreSQL connection string
-	MongoDBURL      string               `yaml:"mongodb_url"`       // MongoDB connection string
-	MongoDBDatabase string               `yaml:"mongodb_database"`  // MongoDB database name
-	FilePath        string               `yaml:"file_path"`         // Path to JSON file for file backend
-	PostgresPool    PostgresPoolConfig   `yaml:"postgres_pool"`     // PostgreSQL connection pool settings
-	Archival        ArchivalConfig       `yaml:"archival"`          // Automatic archival configuration
-	CartQuoteTTL    Duration             `yaml:"cart_quote_ttl"`    // How long cart quotes remain valid (default: 15m)
-	RefundQuoteTTL  Duration             `yaml:"refund_quote_ttl"`  // How long refund quotes remain valid (default: 15m)
-	CleanupInterval Duration             `yaml:"cleanup_interval"`  // How often to clean up expired quotes (default: 5m)
-	SchemaMapping   SchemaMappingConfig  `yaml:"schema_mapping"`    // Table/collection name mappings for all entities
+	Backend         string              `yaml:"backend"`          // "memory", "postgres", "mongodb", or "file"
+	PostgresURL     string              `yaml:"postgres_url"`     // PostgreSQL connection string
+	MongoDBURL      string              `yaml:"mongodb_url"`      // MongoDB connection string
+	MongoDBDatabase string              `yaml:"mongodb_database"` // MongoDB database name
+	FilePath        string              `yaml:"file_path"`        // Path to JSON file for file backend
+	PostgresPool    PostgresPoolConfig  `yaml:"postgres_pool"`    // PostgreSQL connection pool settings
+	Archival        ArchivalConfig      `yaml:"archival"`         // Automatic archival configuration
+	CartQuoteTTL    Duration            `yaml:"cart_quote_ttl"`   // How long cart quotes remain valid (default: 15m)
+	RefundQuoteTTL  Duration            `yaml:"refund_quote_ttl"` // How long refund quotes remain valid (default: 15m)
+	CleanupInterval Duration            `yaml:"cleanup_interval"` // How often to clean up expired quotes (default: 5m)
+	SchemaMapping   SchemaMappingConfig `yaml:"schema_mapping"`   // Table/collection name mappings for all entities
 }
 
 // SchemaMappingConfig holds table/collection name mappings for custom schemas.
@@ -231,15 +231,15 @@ type ArchivalConfig struct {
 
 // CouponConfig holds coupon system configuration.
 type CouponConfig struct {
-	CouponSource      string            `yaml:"coupon_source"`      // "yaml", "postgres", "mongodb", or "disabled"
-	PostgresURL       string            `yaml:"postgres_url"`       // PostgreSQL connection string
-	PostgresTableName string            `yaml:"postgres_table_name"` // PostgreSQL table name (auto-populated from schema_mapping)
-	MongoDBURL        string            `yaml:"mongodb_url"`        // MongoDB connection string
-	MongoDBDatabase   string            `yaml:"mongodb_database"`   // MongoDB database name
-	MongoDBCollection string            `yaml:"mongodb_collection"` // MongoDB collection name (default: "coupons")
-	CacheTTL          Duration          `yaml:"cache_ttl"`          // Cache TTL for coupon validation (short, e.g., 1m)
-	Coupons           map[string]Coupon `yaml:"coupons"`            // Only used when CouponSource = "yaml"
-	PostgresPool      PostgresPoolConfig `yaml:"postgres_pool"`     // PostgreSQL connection pool settings
+	CouponSource      string             `yaml:"coupon_source"`       // "yaml", "postgres", "mongodb", or "disabled"
+	PostgresURL       string             `yaml:"postgres_url"`        // PostgreSQL connection string
+	PostgresTableName string             `yaml:"postgres_table_name"` // PostgreSQL table name (auto-populated from schema_mapping)
+	MongoDBURL        string             `yaml:"mongodb_url"`         // MongoDB connection string
+	MongoDBDatabase   string             `yaml:"mongodb_database"`    // MongoDB database name
+	MongoDBCollection string             `yaml:"mongodb_collection"`  // MongoDB collection name (default: "coupons")
+	CacheTTL          Duration           `yaml:"cache_ttl"`           // Cache TTL for coupon validation (short, e.g., 1m)
+	Coupons           map[string]Coupon  `yaml:"coupons"`             // Only used when CouponSource = "yaml"
+	PostgresPool      PostgresPoolConfig `yaml:"postgres_pool"`       // PostgreSQL connection pool settings
 }
 
 // Coupon defines a discount code in YAML configuration.
@@ -297,10 +297,10 @@ type APIKeyConfig struct {
 // CircuitBreakerConfig holds circuit breaker configuration for external services.
 // Prevents cascading failures by failing fast when external services are degraded.
 type CircuitBreakerConfig struct {
-	Enabled   bool                      `yaml:"enabled"`    // Enable circuit breakers (default: true)
-	SolanaRPC BreakerServiceConfig      `yaml:"solana_rpc"` // Solana RPC circuit breaker
-	StripeAPI BreakerServiceConfig      `yaml:"stripe_api"` // Stripe API circuit breaker
-	Webhook   BreakerServiceConfig      `yaml:"webhook"`    // Webhook delivery circuit breaker
+	Enabled   bool                 `yaml:"enabled"`    // Enable circuit breakers (default: true)
+	SolanaRPC BreakerServiceConfig `yaml:"solana_rpc"` // Solana RPC circuit breaker
+	StripeAPI BreakerServiceConfig `yaml:"stripe_api"` // Stripe API circuit breaker
+	Webhook   BreakerServiceConfig `yaml:"webhook"`    // Webhook delivery circuit breaker
 }
 
 // BreakerServiceConfig configures a circuit breaker for a specific external service.

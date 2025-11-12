@@ -140,7 +140,7 @@ func (s *Service) Authorize(ctx context.Context, resourceID, stripeSessionID, pa
 			placeholderTx := storage.PaymentTransaction{
 				Signature:  proof.Signature,
 				ResourceID: resourceID,
-				Wallet:     "", // Will be updated after verification
+				Wallet:     "",                      // Will be updated after verification
 				Amount:     money.Zero(cryptoAsset), // Will be updated after verification
 				CreatedAt:  now,
 				Metadata:   map[string]string{"status": "verifying"},

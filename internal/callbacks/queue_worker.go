@@ -17,14 +17,14 @@ import (
 
 // WebhookQueueWorker processes webhooks from the persistent queue.
 type WebhookQueueWorker struct {
-	store       storage.Store
-	cfg         config.CallbacksConfig
-	retryCfg    RetryConfig
-	httpClient  *http.Client
-	logger      zerolog.Logger
-	metrics     *metrics.Metrics
-	stopChan    chan struct{}
-	doneChan    chan struct{}
+	store        storage.Store
+	cfg          config.CallbacksConfig
+	retryCfg     RetryConfig
+	httpClient   *http.Client
+	logger       zerolog.Logger
+	metrics      *metrics.Metrics
+	stopChan     chan struct{}
+	doneChan     chan struct{}
 	pollInterval time.Duration
 }
 

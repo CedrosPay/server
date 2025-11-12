@@ -74,9 +74,9 @@ func TestMiddleware_ValidAPIKey(t *testing.T) {
 			cfg := Config{
 				Enabled: true,
 				APIKeys: map[string]Tier{
-					"pro_key_123":      TierPro,
-					"enterprise_abc":   TierEnterprise,
-					"partner_stripe":   TierPartner,
+					"pro_key_123":    TierPro,
+					"enterprise_abc": TierEnterprise,
+					"partner_stripe": TierPartner,
 				},
 			}
 

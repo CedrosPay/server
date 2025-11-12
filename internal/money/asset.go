@@ -18,7 +18,7 @@ type AssetType int
 
 const (
 	AssetTypeFiat AssetType = iota // Fiat currency (Stripe)
-	AssetTypeSPL                    // Solana SPL token
+	AssetTypeSPL                   // Solana SPL token
 )
 
 // AssetMetadata contains backend-specific information.
@@ -29,66 +29,66 @@ type AssetMetadata struct {
 
 // Global asset registry with concurrent access protection
 var (
-	assetRegistry   = map[string]Asset{
-	// Fiat currencies (Stripe)
-	"USD": {
-		Code:     "USD",
-		Decimals: 2, // cents
-		Type:     AssetTypeFiat,
-		Metadata: AssetMetadata{
-			StripeCurrency: "usd",
+	assetRegistry = map[string]Asset{
+		// Fiat currencies (Stripe)
+		"USD": {
+			Code:     "USD",
+			Decimals: 2, // cents
+			Type:     AssetTypeFiat,
+			Metadata: AssetMetadata{
+				StripeCurrency: "usd",
+			},
 		},
-	},
-	"EUR": {
-		Code:     "EUR",
-		Decimals: 2, // cents
-		Type:     AssetTypeFiat,
-		Metadata: AssetMetadata{
-			StripeCurrency: "eur",
+		"EUR": {
+			Code:     "EUR",
+			Decimals: 2, // cents
+			Type:     AssetTypeFiat,
+			Metadata: AssetMetadata{
+				StripeCurrency: "eur",
+			},
 		},
-	},
 
-	// Solana SPL Tokens
-	"USDC": {
-		Code:     "USDC",
-		Decimals: 6, // micro-USDC
-		Type:     AssetTypeSPL,
-		Metadata: AssetMetadata{
-			SolanaMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC mainnet
+		// Solana SPL Tokens
+		"USDC": {
+			Code:     "USDC",
+			Decimals: 6, // micro-USDC
+			Type:     AssetTypeSPL,
+			Metadata: AssetMetadata{
+				SolanaMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC mainnet
+			},
 		},
-	},
-	"SOL": {
-		Code:     "SOL",
-		Decimals: 9, // lamports
-		Type:     AssetTypeSPL,
-		Metadata: AssetMetadata{
-			SolanaMint: "So11111111111111111111111111111111111111112", // Wrapped SOL
+		"SOL": {
+			Code:     "SOL",
+			Decimals: 9, // lamports
+			Type:     AssetTypeSPL,
+			Metadata: AssetMetadata{
+				SolanaMint: "So11111111111111111111111111111111111111112", // Wrapped SOL
+			},
 		},
-	},
-	"USDT": {
-		Code:     "USDT",
-		Decimals: 6, // micro-USDT
-		Type:     AssetTypeSPL,
-		Metadata: AssetMetadata{
-			SolanaMint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", // USDT mainnet
+		"USDT": {
+			Code:     "USDT",
+			Decimals: 6, // micro-USDT
+			Type:     AssetTypeSPL,
+			Metadata: AssetMetadata{
+				SolanaMint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", // USDT mainnet
+			},
 		},
-	},
-	"PYUSD": {
-		Code:     "PYUSD",
-		Decimals: 6, // micro-PYUSD (PayPal USD)
-		Type:     AssetTypeSPL,
-		Metadata: AssetMetadata{
-			SolanaMint: "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo", // PYUSD mainnet
+		"PYUSD": {
+			Code:     "PYUSD",
+			Decimals: 6, // micro-PYUSD (PayPal USD)
+			Type:     AssetTypeSPL,
+			Metadata: AssetMetadata{
+				SolanaMint: "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo", // PYUSD mainnet
+			},
 		},
-	},
-	"CASH": {
-		Code:     "CASH",
-		Decimals: 6, // micro-CASH
-		Type:     AssetTypeSPL,
-		Metadata: AssetMetadata{
-			SolanaMint: "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH", // CASH mainnet
+		"CASH": {
+			Code:     "CASH",
+			Decimals: 6, // micro-CASH
+			Type:     AssetTypeSPL,
+			Metadata: AssetMetadata{
+				SolanaMint: "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH", // CASH mainnet
+			},
 		},
-	},
 	}
 	assetRegistryMu sync.RWMutex
 )

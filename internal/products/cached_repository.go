@@ -15,9 +15,9 @@ type CachedRepository struct {
 
 	mu                   sync.RWMutex
 	cachedList           cacheutil.CachedValue[[]Product]
-	stripePriceIDToID    map[string]string // Reverse index: stripePriceID → productID
+	stripePriceIDToID    map[string]string  // Reverse index: stripePriceID → productID
 	productCache         map[string]Product // Product cache by ID
-	stripePriceIDToIDTTL time.Time // TTL for reverse index
+	stripePriceIDToIDTTL time.Time          // TTL for reverse index
 }
 
 // NewCachedRepository wraps a repository with a caching layer.
