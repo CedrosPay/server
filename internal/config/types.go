@@ -52,11 +52,20 @@ type Config struct {
 	Paywall        PaywallConfig        `yaml:"paywall"`
 	Storage        StorageConfig        `yaml:"storage"`
 	Coupons        CouponConfig         `yaml:"coupons"`
+	Subscriptions  SubscriptionsConfig  `yaml:"subscriptions"`
 	Callbacks      CallbacksConfig      `yaml:"callbacks"`
 	Monitoring     MonitoringConfig     `yaml:"monitoring"`
 	RateLimit      RateLimitConfig      `yaml:"rate_limit"`
 	APIKey         APIKeyConfig         `yaml:"api_key"`
 	CircuitBreaker CircuitBreakerConfig `yaml:"circuit_breaker"`
+}
+
+// SubscriptionsConfig holds subscription management configuration.
+type SubscriptionsConfig struct {
+	Enabled         bool               `yaml:"enabled"`          // Enable subscription support (default: false)
+	Backend         string             `yaml:"backend"`          // "memory" or "postgres" (default: "memory")
+	PostgresURL     string             `yaml:"postgres_url"`     // PostgreSQL connection string (optional, uses storage.postgres_url if not set)
+	GracePeriodHours int               `yaml:"grace_period_hours"` // Default grace period after expiry (default: 0)
 }
 
 // ServerConfig holds HTTP server configuration.
@@ -120,6 +129,7 @@ type X402Config struct {
 	TxQueueMaxInFlight            int      `yaml:"tx_queue_max_in_flight"`            // Maximum concurrent in-flight transactions (sent but waiting for confirmation) - set to 0 for unlimited
 	ComputeUnitLimit              uint32   `yaml:"compute_unit_limit"`                // Compute unit limit for transactions (default: 200000)
 	ComputeUnitPriceMicroLamports uint64   `yaml:"compute_unit_price_micro_lamports"` // Priority fee in microlamports (default: 1)
+	RoundingMode                  string   `yaml:"rounding_mode"`                     // Discount rounding: "standard" (Stripe-compatible: 0.025→0.03, 0.024→0.02) or "ceiling" (always round up)
 }
 
 // PaywallConfig holds paywall service configuration.
@@ -150,6 +160,19 @@ type PaywallResource struct {
 	MemoTemplate       string            `yaml:"memo_template"`
 	Metadata           map[string]string `yaml:"metadata"`
 	Extras             map[string]any    `yaml:"extras"`
+
+	// Subscription configuration (nil/empty = one-time purchase)
+	Subscription *SubscriptionResourceConfig `yaml:"subscription,omitempty"`
+}
+
+// SubscriptionResourceConfig defines subscription billing for a YAML resource.
+type SubscriptionResourceConfig struct {
+	BillingPeriod    string `yaml:"billing_period"`    // "day", "week", "month", "year"
+	BillingInterval  int    `yaml:"billing_interval"`  // e.g., 1 for monthly, 3 for quarterly
+	TrialDays        int    `yaml:"trial_days"`        // Free trial period in days
+	StripePriceID    string `yaml:"stripe_price_id"`   // Stripe recurring price ID (overrides parent)
+	AllowX402        bool   `yaml:"allow_x402"`        // Allow x402 payments for subscription
+	GracePeriodHours int    `yaml:"grace_period_hours"` // Hours after expiry before blocking
 }
 
 // CallbacksConfig holds webhook callback configuration.

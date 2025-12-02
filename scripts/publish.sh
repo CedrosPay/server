@@ -40,6 +40,9 @@ EXCLUDE_PATTERNS=(
     "configs/production.yaml"
     "configs/deploy.yaml"
 
+    # GitHub directory (private deployment automation, issue templates, etc.)
+    ".github/"
+
     # Database files containing PII and transaction history (CRITICAL)
     "data/"
     "data/*.db"
@@ -216,6 +219,21 @@ if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓${NC} Audit files excluded (internal documents)"
     else
         echo -e "${RED}✗${NC} WARNING: Audit files should not be published!"
+    fi
+
+    # Check that spec docs ARE published
+    if [ -d "$PUBLIC_REPO_ROOT/docs/specs" ] && [ -f "$PUBLIC_REPO_ROOT/docs/specs/README.md" ]; then
+        SPEC_COUNT=$(ls -1 "$PUBLIC_REPO_ROOT/docs/specs/"*.md 2>/dev/null | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Spec documentation published ($SPEC_COUNT files)"
+    else
+        echo -e "${YELLOW}⚠${NC} Spec documentation not found (docs/specs/)"
+    fi
+
+    # Check that API reference is published
+    if [ -f "$PUBLIC_REPO_ROOT/docs/API_REFERENCE.md" ]; then
+        echo -e "${GREEN}✓${NC} API reference published"
+    else
+        echo -e "${YELLOW}⚠${NC} API reference not found (docs/API_REFERENCE.md)"
     fi
 
     echo ""

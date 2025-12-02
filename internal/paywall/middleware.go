@@ -41,8 +41,9 @@ func (s *Service) Middleware(resolver ResourceResolver) func(http.Handler) http.
 			paymentHeader := r.Header.Get("X-PAYMENT")
 			paymentHeader = strings.TrimSpace(paymentHeader)
 			couponCode := r.URL.Query().Get("couponCode")
+			wallet := r.Header.Get("X-Wallet") // For subscription access checks
 
-			result, err := s.Authorize(r.Context(), resourceID, stripeSession, paymentHeader, couponCode)
+			result, err := s.AuthorizeWithWallet(r.Context(), resourceID, stripeSession, paymentHeader, couponCode, wallet)
 			if err != nil {
 				if errors.Is(err, ErrStripeSessionPending) {
 					responders.JSON(w, http.StatusPaymentRequired, map[string]any{"error": err.Error()})

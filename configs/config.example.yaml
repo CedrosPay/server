@@ -195,6 +195,13 @@ x402:
   compute_unit_limit: 20000 # Maximum compute units for transactions
   compute_unit_price_micro_lamports: 1 # Priority fee in microlamports
 
+  # Discount Rounding Mode
+  # Controls how fractional cents are rounded when applying percentage discounts
+  # - "standard" (default): Stripe-compatible half-up rounding (0.025→0.03, 0.024→0.02)
+  # - "ceiling": Always round up (0.024→0.03, 0.001→0.01)
+  # Note: Stripe always uses "standard" rounding; this setting only affects x402 crypto payments
+  rounding_mode: "standard"
+
 paywall:
   quote_ttl: 5m # How long payment quotes remain valid before the client must refresh
 
@@ -367,6 +374,60 @@ coupons:
   # mongodb_url: "mongodb://localhost:27017"
   # mongodb_database: "cedros_pay"
   # mongodb_collection: "coupons" # Optional, defaults to "coupons"
+
+# Subscription Configuration (Optional)
+# Enables recurring billing for products marked with subscription settings
+#
+# Subscription support includes:
+# - Stripe: Native recurring billing with webhook-driven lifecycle management
+# - x402: Wallet-bound time-limited access with manual renewal via crypto payments
+#
+# How it works:
+# 1. Configure a product with subscription settings (see paywall.resources example)
+# 2. Enable subscriptions below
+# 3. Use subscription endpoints (matches BACKEND_SUBSCRIPTION_API.md):
+#    - GET  /paywall/v1/subscription/status?resource=...&userId=...
+#    - POST /paywall/v1/subscription/stripe-session
+#    - POST /paywall/v1/subscription/quote
+#    - POST /paywall/v1/subscription/cancel
+#    - POST /paywall/v1/subscription/portal
+#    - POST /paywall/v1/subscription/x402/activate
+#
+# Access Control:
+# When subscriptions are enabled, the paywall middleware automatically checks
+# if the wallet (X-Wallet header) has an active subscription before requiring payment.
+#
+subscriptions:
+  enabled: false # Set to true to enable subscription support
+
+  # Backend storage for subscription records
+  # - "memory": In-memory storage (for testing only, data lost on restart)
+  # - "postgres": PostgreSQL storage (recommended for production)
+  backend: "memory"
+
+  # PostgreSQL connection string (only used when backend = "postgres")
+  # If not specified, uses storage.postgres_url
+  # postgres_url: "postgresql://user:password@localhost:5432/cedros_pay?sslmode=disable"
+
+  # Grace period after subscription expires before blocking access (hours)
+  # Set to 0 for immediate cutoff after expiration
+  grace_period_hours: 0
+
+# Example subscription product configuration (add to paywall.resources):
+# subscription-plan:
+#   description: "Monthly Pro Subscription"
+#   fiat_amount_cents: 999  # $9.99/month
+#   fiat_currency: usd
+#   stripe_price_id: "price_xxx"  # Stripe recurring price ID
+#   crypto_atomic_amount: 9990000  # 9.99 USDC
+#   crypto_token: "USDC"
+#   subscription:
+#     billing_period: "month"      # "day", "week", "month", "year"
+#     billing_interval: 1          # 1 = monthly, 3 = quarterly (for billing_period: month)
+#     trial_days: 7                # Optional free trial period
+#     stripe_price_id: "price_xxx" # Override parent stripe_price_id for recurring
+#     allow_x402: true             # Allow crypto subscription payments
+#     grace_period_hours: 24       # Product-specific grace period override
 
 callbacks:
   payment_success_url: "" # Optional webhook the server POSTs after successful payments; leave blank to disable

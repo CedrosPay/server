@@ -11,6 +11,7 @@ Complete reference for all Cedros Pay server endpoints.
 - [x402 Crypto Payments](#x402-crypto-payments)
 - [Cart Checkout](#cart-checkout)
 - [Refunds](#refunds)
+- [Subscriptions](#subscriptions)
 - [Webhooks](#webhooks)
 - [Callbacks](#callbacks)
 - [Metrics & Observability](#metrics--observability)
@@ -1431,6 +1432,372 @@ X-Signer: YourPayToWalletAddress...
 - Refund is permanently deleted from storage
 - No callback is fired for denied refunds
 - No complex auth system needed - uses wallet signatures
+
+---
+
+## Subscriptions
+
+Cedros Pay supports recurring subscriptions via both Stripe and x402 crypto payments. Subscriptions can be managed through these endpoints.
+
+### Check Subscription Status
+
+**GET {prefix}/paywall/v1/subscription/status**
+
+Check if a user has an active subscription for a resource.
+
+**Query Parameters:**
+- `resource` (required): The plan/resource ID
+- `userId` (required): User identifier (wallet address for crypto, email/customer ID for Stripe)
+
+**Example:** `GET /paywall/v1/subscription/status?resource=plan-pro&userId=BYNhM2C7hRdqY8PAkBGvxnVkKvHPRAqCGbFYk2aQePWg`
+
+**Success Response (200 OK):**
+```json
+{
+  "active": true,
+  "status": "active",
+  "expiresAt": "2025-12-31T23:59:59Z",
+  "currentPeriodEnd": "2025-01-31T23:59:59Z",
+  "interval": "monthly",
+  "cancelAtPeriodEnd": false
+}
+```
+
+**No Subscription Response (200 OK):**
+```json
+{
+  "active": false,
+  "status": "expired"
+}
+```
+
+**Status Values:**
+- `active` - Subscription is current and paid
+- `trialing` - User is in trial period
+- `past_due` - Payment failed but within grace period
+- `canceled` - User canceled, access until period end
+- `unpaid` - Payment failed, beyond grace period
+- `expired` - Subscription has ended
+
+**Notes:**
+- For crypto subscriptions, `userId` is the wallet's public key (base58 string)
+- For Stripe subscriptions, `userId` can be email or Stripe customer ID
+- Returns `active: false` if no subscription exists (don't return 404)
+
+---
+
+### Create Stripe Subscription Session
+
+**POST {prefix}/paywall/v1/subscription/stripe-session**
+
+Creates a Stripe Checkout session for subscription signup.
+
+**Request Headers:**
+```
+Content-Type: application/json
+Idempotency-Key: <uuid>  // For safe retries
+```
+
+**Request Body:**
+```json
+{
+  "resource": "plan-pro",
+  "interval": "monthly",
+  "intervalDays": 45,
+  "trialDays": 14,
+  "customerEmail": "user@example.com",
+  "metadata": {
+    "userId": "user-123",
+    "source": "pricing-page"
+  },
+  "couponCode": "SAVE20",
+  "successUrl": "https://example.com/success",
+  "cancelUrl": "https://example.com/cancel"
+}
+```
+
+**Request Fields:**
+- `resource` (required): Plan/resource ID from paywall config
+- `interval` (required): `"weekly"` | `"monthly"` | `"yearly"` | `"custom"`
+- `intervalDays` (optional): Only used when interval is `"custom"`
+- `trialDays` (optional): Number of trial days (0 for no trial)
+- `customerEmail` (optional): Pre-fills Stripe checkout
+- `metadata` (optional): Custom metadata for tracking
+- `couponCode` (optional): Coupon code for discount
+- `successUrl` (optional): Redirect URL on success
+- `cancelUrl` (optional): Redirect URL on cancel
+
+**Success Response (200 OK):**
+```json
+{
+  "sessionId": "cs_test_a1b2c3d4...",
+  "url": "https://checkout.stripe.com/c/pay/cs_test_a1b2c3d4..."
+}
+```
+
+**Error Response (400/500):**
+```json
+{
+  "error": "Invalid plan",
+  "code": "invalid_resource"
+}
+```
+
+---
+
+### Request Subscription Quote (x402)
+
+**POST {prefix}/paywall/v1/subscription/quote**
+
+Returns a payment quote for a crypto subscription. Follows x402 protocol.
+
+**Request Body:**
+```json
+{
+  "resource": "plan-pro",
+  "interval": "monthly",
+  "couponCode": "CRYPTO10",
+  "intervalDays": 45
+}
+```
+
+**Response (402 Payment Required):**
+```json
+{
+  "requirement": {
+    "scheme": "solana-spl-transfer",
+    "network": "mainnet-beta",
+    "maxAmountRequired": "10000000",
+    "resource": "plan-pro",
+    "description": "Pro Plan Monthly Subscription",
+    "mimeType": "application/json",
+    "payTo": "BYNhM2C7hRdqY8PAkBGvxnVkKvHPRAqCGbFYk2aQePWg",
+    "maxTimeoutSeconds": 300,
+    "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "extra": {
+      "recipientTokenAccount": "...",
+      "decimals": 6,
+      "tokenSymbol": "USDC",
+      "memo": "sub:plan-pro:monthly",
+      "feePayer": "..."
+    }
+  },
+  "subscription": {
+    "interval": "monthly",
+    "intervalDays": 30,
+    "durationSeconds": 2592000,
+    "periodStart": "2025-01-01T00:00:00Z",
+    "periodEnd": "2025-01-31T23:59:59Z"
+  }
+}
+```
+
+**Response Fields:**
+- `requirement`: Standard x402 payment requirement
+- `subscription.interval`: Billing interval
+- `subscription.durationSeconds`: How long this payment covers
+- `subscription.periodStart/periodEnd`: When subscription period starts/ends
+
+**Payment Flow:**
+1. UI gets quote from `/subscription/quote`
+2. User signs transaction in wallet
+3. UI submits payment to `/paywall/v1/verify` with `X-PAYMENT` header
+4. Backend verifies payment and creates/extends subscription
+5. Backend returns success response
+
+---
+
+### Cancel Subscription
+
+**POST {prefix}/paywall/v1/subscription/cancel**
+
+Cancel an active subscription. Subscription remains active until current period ends.
+
+**Request Body:**
+```json
+{
+  "resource": "plan-pro",
+  "userId": "BYNhM2C7hRdqY8PAkBGvxnVkKvHPRAqCGbFYk2aQePWg"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Subscription will cancel at period end",
+  "cancelAtPeriodEnd": true,
+  "currentPeriodEnd": "2025-01-31T23:59:59Z"
+}
+```
+
+---
+
+### Get Billing Portal
+
+**POST {prefix}/paywall/v1/subscription/portal**
+
+Get Stripe billing portal URL for managing subscription (update payment method, view invoices, cancel).
+
+**Request Body:**
+```json
+{
+  "customerId": "cus_abc123"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "url": "https://billing.stripe.com/p/session/..."
+}
+```
+
+---
+
+### Activate x402 Subscription
+
+**POST {prefix}/paywall/v1/subscription/x402/activate**
+
+Activate a subscription after successful x402 crypto payment. Called internally after payment verification.
+
+**Request Body:**
+```json
+{
+  "resource": "plan-pro",
+  "userId": "BYNhM2C7hRdqY8PAkBGvxnVkKvHPRAqCGbFYk2aQePWg",
+  "interval": "monthly",
+  "signature": "5vN7Z...transaction-sig..."
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "subscriptionId": "sub_abc123",
+  "status": "active",
+  "currentPeriodEnd": "2025-01-31T23:59:59Z"
+}
+```
+
+---
+
+### Change Subscription (Upgrade/Downgrade)
+
+**POST {prefix}/paywall/v1/subscription/change**
+
+Upgrade or downgrade a subscription to a different plan.
+
+**Request Body:**
+```json
+{
+  "subscriptionId": "sub_abc123",
+  "newResource": "plan-enterprise",
+  "prorationBehavior": "create_prorations"
+}
+```
+
+**Request Fields:**
+- `subscriptionId` (required): ID of the subscription to change
+- `newResource` (required): New plan/resource ID to switch to
+- `prorationBehavior` (optional): How to handle mid-cycle price changes
+  - `"create_prorations"` (default): Prorate charges/credits for remaining time
+  - `"none"`: No proration, change takes effect at next renewal
+  - `"always_invoice"`: Invoice immediately for any difference
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "subscriptionId": "sub_abc123",
+  "previousResource": "plan-basic",
+  "newResource": "plan-enterprise",
+  "status": "active",
+  "currentPeriodEnd": "2025-01-31T23:59:59Z",
+  "prorationBehavior": "create_prorations"
+}
+```
+
+**Notes:**
+- For Stripe subscriptions, the plan change is applied via Stripe API
+- For x402 subscriptions, only the local record is updated
+- The `previous_product` and `changed_at` are stored in subscription metadata
+- Proration calculates the difference between old and new plan prices
+
+---
+
+### Reactivate Subscription
+
+**POST {prefix}/paywall/v1/subscription/reactivate**
+
+Reactivate a subscription that was scheduled for cancellation at period end.
+
+**Request Body:**
+```json
+{
+  "subscriptionId": "sub_abc123"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "subscriptionId": "sub_abc123",
+  "status": "active",
+  "cancelAtPeriodEnd": false,
+  "currentPeriodEnd": "2025-01-31T23:59:59Z"
+}
+```
+
+**Error Response (400 Bad Request):**
+```json
+{
+  "error": "subscription is not scheduled for cancellation"
+}
+```
+
+**Notes:**
+- Only works if `cancelAtPeriodEnd` is true
+- Subscription must still be within current period
+- For Stripe subscriptions, also updates the Stripe subscription
+
+---
+
+### Subscription Configuration
+
+**Example Configuration:**
+```yaml
+subscriptions:
+  enabled: true
+  backend: memory  # or postgres
+  postgres_url: ""  # required if backend is postgres
+  grace_period_hours: 24  # grace period after payment fails
+
+paywall:
+  products:
+    - id: plan-pro
+      description: "Pro Plan"
+      fiat_amount: 10.00
+      crypto_amount: 10.00
+      subscription:
+        enabled: true
+        intervals: [monthly, yearly]
+        trial_days: 14
+        stripe_price_ids:
+          monthly: price_1ABC123
+          yearly: price_1DEF456
+```
+
+**Stripe Webhook Events:**
+
+Configure your Stripe webhook to send these events for subscription management:
+- `customer.subscription.created` - New subscription created
+- `customer.subscription.updated` - Subscription status changed
+- `customer.subscription.deleted` - Subscription canceled/expired
+- `invoice.payment_succeeded` - Subscription payment successful
+- `invoice.payment_failed` - Subscription payment failed
 
 ---
 

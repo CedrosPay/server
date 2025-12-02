@@ -65,6 +65,22 @@ func (r *YAMLRepository) GetProduct(_ context.Context, id string) (Product, erro
 		}
 	}
 
+	// Convert subscription config if present
+	if resource.Subscription != nil && resource.Subscription.BillingPeriod != "" {
+		p.Subscription = &SubscriptionConfig{
+			BillingPeriod:    resource.Subscription.BillingPeriod,
+			BillingInterval:  resource.Subscription.BillingInterval,
+			TrialDays:        resource.Subscription.TrialDays,
+			StripePriceID:    resource.Subscription.StripePriceID,
+			AllowX402:        resource.Subscription.AllowX402,
+			GracePeriodHours: resource.Subscription.GracePeriodHours,
+		}
+		// Default billing interval to 1 if not set
+		if p.Subscription.BillingInterval < 1 {
+			p.Subscription.BillingInterval = 1
+		}
+	}
+
 	return p, nil
 }
 

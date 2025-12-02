@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-12-02
+
+### Added
+- **Subscription Support** - Full subscription management for recurring payments
+  - `GET /paywall/v1/subscription/status` - Check subscription status by resource and userId
+  - `POST /paywall/v1/subscription/stripe-session` - Create Stripe subscription checkout sessions
+  - `POST /paywall/v1/subscription/quote` - Get x402 payment quote for crypto subscriptions (HTTP 402)
+  - `POST /paywall/v1/subscription/cancel` - Cancel active subscriptions
+  - `POST /paywall/v1/subscription/portal` - Get Stripe billing portal URL
+  - `POST /paywall/v1/subscription/x402/activate` - Activate subscription after x402 payment
+  - `POST /paywall/v1/subscription/change` - Upgrade or downgrade subscription plan
+  - `POST /paywall/v1/subscription/reactivate` - Reactivate a cancelled subscription
+- **Subscription Billing Intervals** - Support for weekly, monthly, yearly, and custom intervals
+- **Subscription Status Tracking** - States: active, trialing, past_due, canceled, unpaid, expired
+- **Trial Period Support** - Configurable trial days per product or per request
+- **Grace Period** - Configurable grace period for expired subscriptions (default: 24 hours)
+- **Subscription Storage** - Memory and PostgreSQL backends for subscription data
+- **Stripe Webhook Integration** - Automatic subscription status updates from Stripe events
+  - `customer.subscription.created`
+  - `customer.subscription.updated` (includes plan change detection)
+  - `customer.subscription.deleted`
+  - `invoice.payment_succeeded`
+  - `invoice.payment_failed`
+- **Plan Change Support** - Upgrade/downgrade subscriptions with proration options
+  - `create_prorations` (default) - Prorate charges/credits for mid-cycle changes
+  - `none` - No proration, changes take effect at next renewal
+  - `always_invoice` - Invoice immediately for any difference
+- **Subscription Reactivation** - Undo cancellation for subscriptions scheduled to cancel at period end
+
+### Configuration
+- New `subscriptions` section in config:
+  ```yaml
+  subscriptions:
+    enabled: true
+    backend: memory  # or postgres
+    postgres_url: ""  # required if backend is postgres
+    grace_period_hours: 24
+  ```
+- Product-level subscription configuration:
+  ```yaml
+  products:
+    - id: plan-pro
+      subscription:
+        enabled: true
+        intervals: [monthly, yearly]
+        trial_days: 14
+        stripe_price_ids:
+          monthly: price_xxx
+          yearly: price_yyy
+  ```
+
+## [1.0.2] - 2025-12-01
+
+### Fixed
+- Configurable discount rounding mode (`x402.rounding_mode`)
+  - `"standard"` (default): Stripe-compatible half-up rounding (0.025→0.03, 0.024→0.02)
+  - `"ceiling"`: Always round up fractional cents (0.024→0.03, 0.001→0.01)
+  - Applies to all percentage-based discount calculations for x402 crypto payments
+  - Note: Stripe always uses standard rounding (not configurable)
+  - Configurable in YAML config files for consistent x402 payment behavior
+- Added docs.cedrospay.com to CORS allowed origins
+- Added unit tests for rounding mode functions (`MulBasisPointsWithRounding`, `ApplyPercentageDiscountWithRounding`, `ParseRoundingMode`)
+
 ## [1.0.1] - 2025-11-11
 
 ### Added
@@ -196,4 +259,7 @@ docker pull cedros/cedros-pay-server:v1.0.0
 
 ---
 
+[1.1.0]: https://github.com/yourusername/cedros-pay-server/releases/tag/v1.1.0
+[1.0.2]: https://github.com/yourusername/cedros-pay-server/releases/tag/v1.0.2
+[1.0.1]: https://github.com/yourusername/cedros-pay-server/releases/tag/v1.0.1
 [1.0.0]: https://github.com/yourusername/cedros-pay-server/releases/tag/v1.0.0

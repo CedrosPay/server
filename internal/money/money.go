@@ -252,10 +252,42 @@ func (m Money) Mul(multiplier int64) (Money, error) {
 	return Money{Asset: m.Asset, Atomic: bigResult.Int64()}, nil
 }
 
+// RoundingMode determines how fractional cents are rounded.
+type RoundingMode int
+
+const (
+	// RoundingStandard uses half-up rounding (0.5 rounds up).
+	// This matches Stripe's default behavior: $0.025 → $0.03, $0.024 → $0.02
+	RoundingStandard RoundingMode = iota
+
+	// RoundingCeiling always rounds up to the next cent.
+	// Example: $0.024 → $0.03, $0.001 → $0.01
+	RoundingCeiling
+)
+
+// ParseRoundingMode converts a string to RoundingMode.
+// Accepts "standard", "ceiling", or empty string (defaults to standard).
+func ParseRoundingMode(mode string) RoundingMode {
+	switch mode {
+	case "ceiling":
+		return RoundingCeiling
+	case "standard", "":
+		return RoundingStandard
+	default:
+		return RoundingStandard // Default to standard for invalid values
+	}
+}
+
 // MulBasisPoints multiplies Money by basis points (1/100th of a percent).
 // Example: amount.MulBasisPoints(250) applies a 2.5% rate.
-// Uses half-up rounding.
+// Uses half-up rounding (standard).
 func (m Money) MulBasisPoints(basisPoints int64) (Money, error) {
+	return m.MulBasisPointsWithRounding(basisPoints, RoundingStandard)
+}
+
+// MulBasisPointsWithRounding multiplies Money by basis points with configurable rounding.
+// Example: amount.MulBasisPointsWithRounding(250, RoundingCeiling) applies a 2.5% rate with ceiling rounding.
+func (m Money) MulBasisPointsWithRounding(basisPoints int64, mode RoundingMode) (Money, error) {
 	if basisPoints == 0 {
 		return Zero(m.Asset), nil
 	}
@@ -269,11 +301,23 @@ func (m Money) MulBasisPoints(basisPoints int64) (Money, error) {
 	// result = (atomic * basisPoints) / 10000
 	bigResult := new(big.Int).Mul(bigAtomic, bigBP)
 
-	// Half-up rounding: add 5000 before dividing by 10000
-	if bigResult.Sign() >= 0 {
-		bigResult.Add(bigResult, big.NewInt(5000))
-	} else {
-		bigResult.Sub(bigResult, big.NewInt(5000))
+	// Apply rounding based on mode
+	switch mode {
+	case RoundingStandard:
+		// Half-up rounding: add 5000 before dividing by 10000
+		if bigResult.Sign() >= 0 {
+			bigResult.Add(bigResult, big.NewInt(5000))
+		} else {
+			bigResult.Sub(bigResult, big.NewInt(5000))
+		}
+	case RoundingCeiling:
+		// Ceiling rounding: add 9999 before dividing by 10000
+		// This ensures any fractional amount rounds up
+		if bigResult.Sign() >= 0 {
+			bigResult.Add(bigResult, big.NewInt(9999))
+		} else {
+			bigResult.Sub(bigResult, big.NewInt(9999))
+		}
 	}
 
 	bigResult.Div(bigResult, bigDivisor)

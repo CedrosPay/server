@@ -221,6 +221,135 @@ func TestMulBasisPoints(t *testing.T) {
 	}
 }
 
+func TestMulBasisPointsWithRounding(t *testing.T) {
+	tests := []struct {
+		name        string
+		money       Money
+		basisPoints int64
+		mode        RoundingMode
+		want        int64
+		wantErr     bool
+	}{
+		// Standard rounding (half-up) - same as MulBasisPoints
+		{"standard: 10% of $10.05", Money{USD, 1005}, 1000, RoundingStandard, 101, false}, // $1.005 → $1.01
+		{"standard: 80% of $10.00", Money{USD, 1000}, 8000, RoundingStandard, 800, false}, // 20% off $10 = $8.00
+		{"standard: 80% of $9.99", Money{USD, 999}, 8000, RoundingStandard, 799, false},   // 20% off $9.99 = $7.992 → $7.99
+
+		// Ceiling rounding - always round up
+		{"ceiling: 10% of $10.05", Money{USD, 1005}, 1000, RoundingCeiling, 101, false},  // $1.005 → $1.01
+		{"ceiling: 80% of $10.00", Money{USD, 1000}, 8000, RoundingCeiling, 800, false},  // Exact, no rounding needed
+		{"ceiling: 80% of $9.99", Money{USD, 999}, 8000, RoundingCeiling, 800, false},    // 20% off $9.99 = $7.992 → $8.00
+		{"ceiling: 80% of $1.01", Money{USD, 101}, 8000, RoundingCeiling, 81, false},     // 20% off $1.01 = $0.808 → $0.81
+		{"ceiling: 80% of $1.03", Money{USD, 103}, 8000, RoundingCeiling, 83, false},     // 20% off $1.03 = $0.824 → $0.83
+		{"ceiling: small fractional", Money{USD, 1001}, 8000, RoundingCeiling, 801, false}, // $8.008 → $8.01
+
+		// Edge cases
+		{"standard: 0 basis points", Money{USD, 10000}, 0, RoundingStandard, 0, false},
+		{"ceiling: 0 basis points", Money{USD, 10000}, 0, RoundingCeiling, 0, false},
+		{"standard: 100%", Money{USD, 1000}, 10000, RoundingStandard, 1000, false},
+		{"ceiling: 100%", Money{USD, 1000}, 10000, RoundingCeiling, 1000, false},
+
+		// USDC (6 decimals) tests
+		{"standard: USDC 80% of 1.00", Money{USDC, 1000000}, 8000, RoundingStandard, 800000, false},
+		{"ceiling: USDC 80% of 1.00", Money{USDC, 1000000}, 8000, RoundingCeiling, 800000, false},
+		{"standard: USDC 80% of 0.999999", Money{USDC, 999999}, 8000, RoundingStandard, 799999, false}, // 799999.2 → 799999
+		{"ceiling: USDC 80% of 0.999999", Money{USDC, 999999}, 8000, RoundingCeiling, 800000, false},   // 799999.2 → 800000
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.money.MulBasisPointsWithRounding(tt.basisPoints, tt.mode)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MulBasisPointsWithRounding() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && got.Atomic != tt.want {
+				t.Errorf("MulBasisPointsWithRounding() = %v, want %v", got.Atomic, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseRoundingMode(t *testing.T) {
+	tests := []struct {
+		input string
+		want  RoundingMode
+	}{
+		{"standard", RoundingStandard},
+		{"ceiling", RoundingCeiling},
+		{"", RoundingStandard},
+		{"invalid", RoundingStandard},
+		{"CEILING", RoundingStandard}, // Case-sensitive, invalid
+		{"Standard", RoundingStandard}, // Case-sensitive, invalid
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := ParseRoundingMode(tt.input)
+			if got != tt.want {
+				t.Errorf("ParseRoundingMode(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplyPercentageDiscountWithRounding(t *testing.T) {
+	tests := []struct {
+		name            string
+		money           Money
+		discountPercent float64
+		mode            RoundingMode
+		want            int64
+	}{
+		// Standard rounding - 20% off
+		{"standard: 20% off $10.00", Money{USD, 1000}, 20, RoundingStandard, 800},
+		{"standard: 20% off $9.99", Money{USD, 999}, 20, RoundingStandard, 799},   // $7.992 → $7.99
+		{"standard: 20% off $9.97", Money{USD, 997}, 20, RoundingStandard, 798},   // $7.976 → $7.98
+		{"standard: 20% off $0.69", Money{USD, 69}, 20, RoundingStandard, 55},     // $0.552 → $0.55
+
+		// Ceiling rounding - 20% off (discounted price rounds up, meaning customer pays more)
+		{"ceiling: 20% off $10.00", Money{USD, 1000}, 20, RoundingCeiling, 800},
+		{"ceiling: 20% off $9.99", Money{USD, 999}, 20, RoundingCeiling, 800},     // $7.992 → $8.00
+		{"ceiling: 20% off $9.97", Money{USD, 997}, 20, RoundingCeiling, 798},     // $7.976 → $7.98
+		{"ceiling: 20% off $0.69", Money{USD, 69}, 20, RoundingCeiling, 56},       // $0.552 → $0.56
+
+		// Edge cases
+		{"standard: 0% off", Money{USD, 1000}, 0, RoundingStandard, 1000},
+		{"ceiling: 0% off", Money{USD, 1000}, 0, RoundingCeiling, 1000},
+		{"standard: 100% off", Money{USD, 1000}, 100, RoundingStandard, 0},
+		{"ceiling: 100% off", Money{USD, 1000}, 100, RoundingCeiling, 0},
+		{"standard: invalid negative", Money{USD, 1000}, -10, RoundingStandard, 1000},
+		{"standard: invalid over 100", Money{USD, 1000}, 110, RoundingStandard, 1000},
+
+		// USDC (6 decimals) - 20% off
+		{"standard: USDC 20% off 1.00", Money{USDC, 1000000}, 20, RoundingStandard, 800000},
+		{"ceiling: USDC 20% off 1.00", Money{USDC, 1000000}, 20, RoundingCeiling, 800000},
+		{"standard: USDC 20% off 0.69", Money{USDC, 690000}, 20, RoundingStandard, 552000},  // 0.552 exactly
+		{"ceiling: USDC 20% off 0.69", Money{USDC, 690000}, 20, RoundingCeiling, 552000},    // 0.552 exactly
+		{"standard: USDC 20% off 0.999999", Money{USDC, 999999}, 20, RoundingStandard, 799999}, // 0.7999992 → 0.799999
+		{"ceiling: USDC 20% off 0.999999", Money{USDC, 999999}, 20, RoundingCeiling, 800000},   // 0.7999992 → 0.800000
+
+		// Fractional percentages
+		{"standard: 15% off $10.00", Money{USD, 1000}, 15, RoundingStandard, 850},
+		{"ceiling: 15% off $10.00", Money{USD, 1000}, 15, RoundingCeiling, 850},
+		{"standard: 33.33% off $10.00", Money{USD, 1000}, 33.33, RoundingStandard, 667}, // $6.667 → $6.67
+		{"ceiling: 33.33% off $10.00", Money{USD, 1000}, 33.33, RoundingCeiling, 667},   // $6.667 → $6.67
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.money.ApplyPercentageDiscountWithRounding(tt.discountPercent, tt.mode)
+			if err != nil {
+				t.Errorf("ApplyPercentageDiscountWithRounding() error = %v", err)
+				return
+			}
+			if got.Atomic != tt.want {
+				t.Errorf("ApplyPercentageDiscountWithRounding() = %v, want %v", got.Atomic, tt.want)
+			}
+		})
+	}
+}
+
 func TestMulPercent(t *testing.T) {
 	tests := []struct {
 		name    string

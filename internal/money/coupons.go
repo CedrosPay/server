@@ -7,9 +7,16 @@ import (
 
 // ApplyPercentageDiscount applies a percentage discount to the Money amount.
 // The discount is a value between 0-100 (e.g., 10 for 10% off).
-// Uses half-up rounding for the discount calculation.
+// Uses half-up rounding (standard) for the discount calculation.
 // Returns the discounted amount (not the discount itself).
 func (m Money) ApplyPercentageDiscount(discountPercent float64) (Money, error) {
+	return m.ApplyPercentageDiscountWithRounding(discountPercent, RoundingStandard)
+}
+
+// ApplyPercentageDiscountWithRounding applies a percentage discount with configurable rounding.
+// The discount is a value between 0-100 (e.g., 10 for 10% off).
+// Returns the discounted amount (not the discount itself).
+func (m Money) ApplyPercentageDiscountWithRounding(discountPercent float64, mode RoundingMode) (Money, error) {
 	if discountPercent < 0 || discountPercent > 100 {
 		return m, nil // Invalid discount, return original
 	}
@@ -27,7 +34,7 @@ func (m Money) ApplyPercentageDiscount(discountPercent float64) (Money, error) {
 	remainingPercent := 100 - discountPercent
 	basisPoints := int64(remainingPercent * 100)
 
-	return m.MulBasisPoints(basisPoints)
+	return m.MulBasisPointsWithRounding(basisPoints, mode)
 }
 
 // ApplyFixedDiscount subtracts a fixed amount from the Money value.

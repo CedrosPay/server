@@ -1039,6 +1039,137 @@ coupons:
 
 **Migration:** Existing coupons without `applies_at` continue to work (backward compatible). See [docs/FRONTEND_MIGRATION_COUPON_PHASES.md](./docs/FRONTEND_MIGRATION_COUPON_PHASES.md) for frontend integration guide.
 
+### Subscriptions 🆕
+
+Cedros Pay supports recurring subscriptions via both Stripe and x402 crypto payments.
+
+**GET {prefix}/paywall/v1/subscription/status**
+- Check subscription status for a user and resource
+- Query parameters: `resource` (plan ID), `userId` (wallet address or email)
+- Returns subscription status, expiry, and billing interval
+- Example request:
+  ```bash
+  GET /paywall/v1/subscription/status?resource=plan-pro&userId=BYNhM2C7...
+  ```
+- Example response:
+  ```json
+  {
+    "active": true,
+    "status": "active",
+    "expiresAt": "2025-12-31T23:59:59Z",
+    "currentPeriodEnd": "2025-01-31T23:59:59Z",
+    "interval": "monthly",
+    "cancelAtPeriodEnd": false
+  }
+  ```
+- **Status values:** `active`, `trialing`, `past_due`, `canceled`, `unpaid`, `expired`
+
+**POST {prefix}/paywall/v1/subscription/stripe-session**
+- Create Stripe checkout session for subscription signup
+- Supports trial periods, custom intervals, and coupons
+- Example request:
+  ```json
+  {
+    "resource": "plan-pro",
+    "interval": "monthly",
+    "trialDays": 14,
+    "customerEmail": "user@example.com",
+    "couponCode": "SAVE20"
+  }
+  ```
+- Example response:
+  ```json
+  {
+    "sessionId": "cs_test_...",
+    "url": "https://checkout.stripe.com/..."
+  }
+  ```
+- **Intervals:** `weekly`, `monthly`, `yearly`, `custom` (with `intervalDays`)
+
+**POST {prefix}/paywall/v1/subscription/quote**
+- Get x402 payment quote for crypto subscription
+- Returns HTTP 402 with payment requirement and subscription metadata
+- Example request:
+  ```json
+  {
+    "resource": "plan-pro",
+    "interval": "monthly",
+    "couponCode": "CRYPTO10"
+  }
+  ```
+- Example response (HTTP 402):
+  ```json
+  {
+    "requirement": {
+      "scheme": "solana-spl-transfer",
+      "maxAmountRequired": "10000000",
+      "payTo": "TokenAccount...",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    },
+    "subscription": {
+      "interval": "monthly",
+      "durationSeconds": 2592000,
+      "periodStart": "2025-01-01T00:00:00Z",
+      "periodEnd": "2025-01-31T23:59:59Z"
+    }
+  }
+  ```
+
+**POST {prefix}/paywall/v1/subscription/cancel**
+- Cancel an active subscription
+- Request body: `{ "subscriptionId": "sub_123", "atPeriodEnd": true }`
+- If `atPeriodEnd` is true, subscription remains active until current period ends
+
+**POST {prefix}/paywall/v1/subscription/portal**
+- Get Stripe billing portal URL for managing subscription
+- Request body: `{ "customerId": "cus_...", "returnUrl": "https://..." }`
+
+**POST {prefix}/paywall/v1/subscription/x402/activate**
+- Activate subscription after x402 crypto payment verification
+- Called after successful payment via `/paywall/v1/verify`
+
+**POST {prefix}/paywall/v1/subscription/change** 🆕
+- Upgrade or downgrade a subscription to a different plan
+- Supports proration options for mid-cycle changes
+- Example request:
+  ```json
+  {
+    "subscriptionId": "sub_123",
+    "newResource": "plan-enterprise",
+    "prorationBehavior": "create_prorations"
+  }
+  ```
+- **Proration options:**
+  - `create_prorations` (default) - Prorate charges/credits
+  - `none` - No proration, change at next renewal
+  - `always_invoice` - Invoice immediately
+
+**POST {prefix}/paywall/v1/subscription/reactivate** 🆕
+- Reactivate a subscription that was scheduled for cancellation
+- Only works if subscription is still within current period
+- Request body: `{ "subscriptionId": "sub_123" }`
+
+**Configuration:**
+```yaml
+subscriptions:
+  enabled: true
+  backend: memory  # or postgres
+  grace_period_hours: 24
+
+paywall:
+  products:
+    - id: plan-pro
+      subscription:
+        enabled: true
+        intervals: [monthly, yearly]
+        trial_days: 14
+        stripe_price_ids:
+          monthly: price_xxx
+          yearly: price_yyy
+```
+
+See [docs/API_REFERENCE.md](./docs/API_REFERENCE.md) for complete subscription API documentation.
+
 ### Solana Payment - Regular Mode (User Pays All Fees)
 
 **POST {prefix}/paywall/v1/verify** (with `X-PAYMENT` header containing fully-signed transaction)

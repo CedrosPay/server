@@ -21,6 +21,7 @@ import (
 	"github.com/CedrosPay/server/internal/products"
 	"github.com/CedrosPay/server/internal/storage"
 	stripesvc "github.com/CedrosPay/server/internal/stripe"
+	"github.com/CedrosPay/server/internal/subscriptions"
 	"github.com/CedrosPay/server/pkg/x402"
 	"github.com/CedrosPay/server/pkg/x402/solana"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,8 +35,9 @@ type App struct {
 	Notifier         callbacks.Notifier
 	Paywall          *paywall.Service
 	Stripe           *stripesvc.Client
-	CartService      *stripesvc.CartService // NEW: Cart service for multi-item checkouts
-	Coupons          coupons.Repository     // NEW: Coupon repository
+	CartService      *stripesvc.CartService   // Cart service for multi-item checkouts
+	Coupons          coupons.Repository       // Coupon repository
+	Subscriptions    *subscriptions.Service   // Subscription management service
 	IdempotencyStore *idempotency.MemoryStore
 
 	router           chi.Router
@@ -178,8 +180,25 @@ func NewApp(cfg *config.Config, opts ...Option) (*App, error) {
 	// NEW: Create cart service for multi-item checkouts
 	app.CartService = stripesvc.NewCartService(cfg.Stripe, app.Store, app.Notifier, couponRepository, metricsCollector)
 
-	// NEW: Store coupon repository in app
+	// Store coupon repository in app
 	app.Coupons = couponRepository
+
+	// Initialize subscriptions service (optional - nil if not configured)
+	if cfg.Subscriptions.Enabled {
+		subRepo, err := subscriptions.NewRepository(subscriptions.RepositoryConfig{
+			Backend:          cfg.Subscriptions.Backend,
+			PostgresURL:      cfg.Subscriptions.PostgresURL,
+			GracePeriodHours: cfg.Subscriptions.GracePeriodHours,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("init subscriptions repository: %w", err)
+		}
+		app.resourceManager.Register("subscriptions-repository", subRepo)
+		app.Subscriptions = subscriptions.NewService(subRepo, cfg.Subscriptions.GracePeriodHours)
+
+		// Wire subscription checker into paywall for unified access control
+		app.Paywall.SetSubscriptionChecker(app.Subscriptions)
+	}
 
 	if optState.router != nil {
 		app.router = optState.router
@@ -207,7 +226,7 @@ func NewApp(cfg *config.Config, opts ...Option) (*App, error) {
 		Environment: cfg.Logging.Environment,
 	})
 
-	httpserver.ConfigureRouter(app.router, cfg, app.Paywall, app.Stripe, app.Verifier, rpcProxy, app.CartService, app.Coupons, app.IdempotencyStore, metricsCollector, appLogger)
+	httpserver.ConfigureRouter(app.router, cfg, app.Paywall, app.Stripe, app.Verifier, rpcProxy, app.CartService, app.Coupons, app.IdempotencyStore, metricsCollector, app.Subscriptions, appLogger)
 
 	return app, nil
 }
@@ -250,7 +269,7 @@ func RegisterRoutes(router chi.Router, app *App) {
 	}
 
 	// Reuse the app's idempotency store (already created and managed by app lifecycle)
-	httpserver.ConfigureRouter(router, app.Config, app.Paywall, app.Stripe, app.Verifier, rpcProxy, app.CartService, app.Coupons, app.IdempotencyStore, collector, appLogger)
+	httpserver.ConfigureRouter(router, app.Config, app.Paywall, app.Stripe, app.Verifier, rpcProxy, app.CartService, app.Coupons, app.IdempotencyStore, collector, app.Subscriptions, appLogger)
 }
 
 // NewHandler is a convenience that constructs an App and returns its handler.

@@ -47,7 +47,8 @@ func (s *Service) GenerateQuote(ctx context.Context, resourceID, couponCode stri
 
 		// Apply stacked coupons if available
 		if len(stripeCoupons) > 0 {
-			quote.Stripe.AmountCents = stackFiatCoupons(resource.FiatAmountCents, stripeCoupons)
+			roundingMode := money.ParseRoundingMode(s.cfg.X402.RoundingMode)
+			quote.Stripe.AmountCents = stackFiatCoupons(resource.FiatAmountCents, stripeCoupons, roundingMode)
 		}
 	}
 
@@ -71,7 +72,8 @@ func (s *Service) GenerateQuote(ctx context.Context, resourceID, couponCode stri
 
 		// Apply stacked coupons using precise Money arithmetic (catalog first, then checkout)
 		if len(allApplicableCoupons) > 0 {
-			cryptoMoney, err = StackCouponsOnMoney(cryptoMoney, allApplicableCoupons)
+			roundingMode := money.ParseRoundingMode(s.cfg.X402.RoundingMode)
+			cryptoMoney, err = StackCouponsOnMoney(cryptoMoney, allApplicableCoupons, roundingMode)
 			if err != nil {
 				return Quote{}, fmt.Errorf("apply coupons to crypto price: %w", err)
 			}
@@ -276,7 +278,7 @@ func SelectCouponsForPayment(
 // stackFiatCoupons applies stacked coupons to a fiat price (in cents).
 // Fixed discounts are assumed to be in dollars and converted to cents.
 // Returns the final price in cents using precise Money arithmetic.
-func stackFiatCoupons(originalPriceCents int64, applicableCoupons []coupons.Coupon) int64 {
+func stackFiatCoupons(originalPriceCents int64, applicableCoupons []coupons.Coupon, roundingMode money.RoundingMode) int64 {
 	if len(applicableCoupons) == 0 {
 		return originalPriceCents
 	}
@@ -291,8 +293,8 @@ func stackFiatCoupons(originalPriceCents int64, applicableCoupons []coupons.Coup
 
 	priceMoney := money.New(asset, originalPriceCents)
 
-	// Apply coupons using Money arithmetic
-	discounted, err := StackCouponsOnMoney(priceMoney, applicableCoupons)
+	// Apply coupons using Money arithmetic with configured rounding
+	discounted, err := StackCouponsOnMoney(priceMoney, applicableCoupons, roundingMode)
 	if err != nil {
 		// On error, return original price (fail safe)
 		return originalPriceCents

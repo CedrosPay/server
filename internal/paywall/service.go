@@ -11,18 +11,26 @@ import (
 	"github.com/CedrosPay/server/internal/products"
 	solanaKeypair "github.com/CedrosPay/server/internal/solana"
 	"github.com/CedrosPay/server/internal/storage"
+	"github.com/CedrosPay/server/internal/subscriptions"
 	"github.com/CedrosPay/server/pkg/x402"
 )
 
+// SubscriptionChecker provides subscription access verification.
+type SubscriptionChecker interface {
+	// HasAccess checks if a wallet has active subscription access to a product.
+	HasAccess(ctx context.Context, wallet, productID string) (bool, *subscriptions.Subscription, error)
+}
+
 // Service orchestrates paywall pricing, quotes, and authorization.
 type Service struct {
-	cfg        *config.Config
-	store      storage.Store
-	verifier   x402.Verifier
-	notifier   callbacks.Notifier
-	repository products.Repository
-	coupons    coupons.Repository
-	metrics    *metrics.Metrics // Prometheus metrics collector
+	cfg           *config.Config
+	store         storage.Store
+	verifier      x402.Verifier
+	notifier      callbacks.Notifier
+	repository    products.Repository
+	coupons       coupons.Repository
+	subscriptions SubscriptionChecker // Optional subscription access checker
+	metrics       *metrics.Metrics    // Prometheus metrics collector
 }
 
 // NewService constructs a paywall service.
@@ -40,6 +48,12 @@ func NewService(cfg *config.Config, store storage.Store, verifier x402.Verifier,
 		coupons:    couponRepo,
 		metrics:    metricsCollector,
 	}
+}
+
+// SetSubscriptionChecker sets the subscription checker for access verification.
+// This is optional - if not set, subscription-based access control is disabled.
+func (s *Service) SetSubscriptionChecker(checker SubscriptionChecker) {
+	s.subscriptions = checker
 }
 
 // getFeePayerPublicKey returns the server wallet public key for gasless transactions.
@@ -100,6 +114,11 @@ func (s *Service) ResourceDefinitionByStripePriceID(ctx context.Context, stripeP
 // ListProducts returns all active products from the repository (uses cache if enabled).
 func (s *Service) ListProducts(ctx context.Context) ([]products.Product, error) {
 	return s.repository.ListProducts(ctx)
+}
+
+// GetProduct retrieves a product by ID.
+func (s *Service) GetProduct(ctx context.Context, productID string) (products.Product, error) {
+	return s.repository.GetProduct(ctx, productID)
 }
 
 // HasPaymentBeenProcessed checks if a payment signature has been processed by this server.

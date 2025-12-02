@@ -121,7 +121,8 @@ func (s *Service) GenerateCartQuote(ctx context.Context, req CartQuoteRequest) (
 			// Get catalog-level auto-apply coupons for this product (no manual coupons at item level)
 			catalogCoupons := SelectCouponsForPayment(ctx, s.coupons, item.ResourceID, coupons.PaymentMethodX402, nil, ScopeCatalog)
 			if len(catalogCoupons) > 0 {
-				discounted, err := StackCouponsOnMoney(itemPriceMoney, catalogCoupons)
+				roundingMode := money.ParseRoundingMode(s.cfg.X402.RoundingMode)
+				discounted, err := StackCouponsOnMoney(itemPriceMoney, catalogCoupons, roundingMode)
 				if err != nil {
 					return CartQuoteResponse{}, fmt.Errorf("apply catalog coupons: %w", err)
 				}
@@ -192,7 +193,8 @@ func (s *Service) GenerateCartQuote(ctx context.Context, req CartQuoteRequest) (
 
 	// Apply stacked checkout coupons to cart total using Money arithmetic
 	if len(checkoutCoupons) > 0 {
-		discounted, err := StackCouponsOnMoney(totalMoney, checkoutCoupons)
+		roundingMode := money.ParseRoundingMode(s.cfg.X402.RoundingMode)
+		discounted, err := StackCouponsOnMoney(totalMoney, checkoutCoupons, roundingMode)
 		if err != nil {
 			return CartQuoteResponse{}, fmt.Errorf("apply checkout coupons: %w", err)
 		}

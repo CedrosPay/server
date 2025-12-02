@@ -17,6 +17,11 @@ import (
 
 // Authorize attempts to grant access using Stripe or x402 proof headers.
 func (s *Service) Authorize(ctx context.Context, resourceID, stripeSessionID, paymentHeader, couponCode string) (AuthorizationResult, error) {
+	return s.AuthorizeWithWallet(ctx, resourceID, stripeSessionID, paymentHeader, couponCode, "")
+}
+
+// AuthorizeWithWallet attempts to grant access, checking subscription status if wallet is provided.
+func (s *Service) AuthorizeWithWallet(ctx context.Context, resourceID, stripeSessionID, paymentHeader, couponCode, wallet string) (AuthorizationResult, error) {
 	// Check if this is a cart payment (resourceID starts with "cart_")
 	if strings.HasPrefix(resourceID, "cart_") {
 		return s.authorizeCart(ctx, resourceID, paymentHeader, couponCode)
@@ -30,6 +35,24 @@ func (s *Service) Authorize(ctx context.Context, resourceID, stripeSessionID, pa
 	resource, err := s.ResourceDefinition(ctx, resourceID)
 	if err != nil {
 		return AuthorizationResult{}, err
+	}
+
+	// Check subscription access if wallet is provided and subscriptions are enabled
+	if wallet != "" && s.subscriptions != nil {
+		hasAccess, sub, err := s.subscriptions.HasAccess(ctx, wallet, resourceID)
+		if err == nil && hasAccess {
+			return AuthorizationResult{
+				Granted: true,
+				Method:  "subscription",
+				Wallet:  wallet,
+				Subscription: &SubscriptionInfo{
+					ID:               sub.ID,
+					Status:           string(sub.Status),
+					CurrentPeriodEnd: sub.CurrentPeriodEnd,
+				},
+			}, nil
+		}
+		// If error or no access, continue with payment flow
 	}
 
 	// Check Stripe session if provided
@@ -90,7 +113,8 @@ func (s *Service) Authorize(ctx context.Context, resourceID, stripeSessionID, pa
 
 		// Apply stacked coupons using precise Money arithmetic (catalog first, then checkout)
 		if len(applicableCoupons) > 0 {
-			expectedMoney, err = StackCouponsOnMoney(expectedMoney, applicableCoupons)
+			roundingMode := money.ParseRoundingMode(s.cfg.X402.RoundingMode)
+			expectedMoney, err = StackCouponsOnMoney(expectedMoney, applicableCoupons, roundingMode)
 			if err != nil {
 				return AuthorizationResult{}, fmt.Errorf("apply coupons to expected amount: %w", err)
 			}

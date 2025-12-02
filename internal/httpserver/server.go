@@ -20,6 +20,7 @@ import (
 	"github.com/CedrosPay/server/internal/paywall"
 	"github.com/CedrosPay/server/internal/ratelimit"
 	stripesvc "github.com/CedrosPay/server/internal/stripe"
+	"github.com/CedrosPay/server/internal/subscriptions"
 	"github.com/CedrosPay/server/internal/versioning"
 	"github.com/CedrosPay/server/pkg/x402"
 )
@@ -38,17 +39,18 @@ type handlers struct {
 	cfg              *config.Config
 	paywall          *paywall.Service
 	stripe           *stripesvc.Client
-	cartService      *stripesvc.CartService // NEW: Cart service for multi-item checkouts
+	cartService      *stripesvc.CartService   // Cart service for multi-item checkouts
 	verifier         x402.Verifier
 	rpcProxy         *rpcProxyHandlers
-	couponRepo       coupons.Repository // NEW: Coupon repository
-	idempotencyStore idempotency.Store  // NEW: Idempotency store for request deduplication
-	metrics          *metrics.Metrics   // NEW: Prometheus metrics collector
-	logger           zerolog.Logger     // Structured logger
+	couponRepo       coupons.Repository       // Coupon repository
+	idempotencyStore idempotency.Store        // Idempotency store for request deduplication
+	metrics          *metrics.Metrics         // Prometheus metrics collector
+	subscriptions    *subscriptions.Service   // Subscription management service
+	logger           zerolog.Logger           // Structured logger
 }
 
 // New builds the HTTP server with configured router.
-func New(cfg *config.Config, paywallSvc *paywall.Service, stripeClient *stripesvc.Client, cartService *stripesvc.CartService, verifier x402.Verifier, couponRepo coupons.Repository, idempotencyStore idempotency.Store, metricsCollector *metrics.Metrics, appLogger zerolog.Logger) *Server {
+func New(cfg *config.Config, paywallSvc *paywall.Service, stripeClient *stripesvc.Client, cartService *stripesvc.CartService, verifier x402.Verifier, couponRepo coupons.Repository, idempotencyStore idempotency.Store, metricsCollector *metrics.Metrics, subscriptionsSvc *subscriptions.Service, appLogger zerolog.Logger) *Server {
 	router := chi.NewRouter()
 	rpcProxy := NewRPCProxyHandlers(cfg)
 
@@ -63,6 +65,7 @@ func New(cfg *config.Config, paywallSvc *paywall.Service, stripeClient *stripesv
 			couponRepo:       couponRepo,
 			idempotencyStore: idempotencyStore,
 			metrics:          metricsCollector,
+			subscriptions:    subscriptionsSvc,
 			logger:           appLogger,
 		},
 		httpServer: &http.Server{
@@ -74,13 +77,13 @@ func New(cfg *config.Config, paywallSvc *paywall.Service, stripeClient *stripesv
 		},
 	}
 
-	ConfigureRouter(router, cfg, paywallSvc, stripeClient, verifier, rpcProxy, cartService, couponRepo, idempotencyStore, metricsCollector, appLogger)
+	ConfigureRouter(router, cfg, paywallSvc, stripeClient, verifier, rpcProxy, cartService, couponRepo, idempotencyStore, metricsCollector, subscriptionsSvc, appLogger)
 
 	return s
 }
 
 // ConfigureRouter attaches Cedros routes to an existing router.
-func ConfigureRouter(router chi.Router, cfg *config.Config, paywallSvc *paywall.Service, stripeClient *stripesvc.Client, verifier x402.Verifier, rpcProxy *rpcProxyHandlers, cartService *stripesvc.CartService, couponRepo coupons.Repository, idempotencyStore idempotency.Store, metricsCollector *metrics.Metrics, appLogger zerolog.Logger) {
+func ConfigureRouter(router chi.Router, cfg *config.Config, paywallSvc *paywall.Service, stripeClient *stripesvc.Client, verifier x402.Verifier, rpcProxy *rpcProxyHandlers, cartService *stripesvc.CartService, couponRepo coupons.Repository, idempotencyStore idempotency.Store, metricsCollector *metrics.Metrics, subscriptionsSvc *subscriptions.Service, appLogger zerolog.Logger) {
 	if router == nil {
 		return
 	}
@@ -89,12 +92,13 @@ func ConfigureRouter(router chi.Router, cfg *config.Config, paywallSvc *paywall.
 		cfg:              cfg,
 		paywall:          paywallSvc,
 		stripe:           stripeClient,
-		cartService:      cartService, // NEW: Add cart service
+		cartService:      cartService,
 		verifier:         verifier,
 		rpcProxy:         rpcProxy,
-		couponRepo:       couponRepo,       // NEW: Add coupon repository
-		idempotencyStore: idempotencyStore, // NEW: Add idempotency store
-		metrics:          metricsCollector, // NEW: Add metrics collector
+		couponRepo:       couponRepo,
+		idempotencyStore: idempotencyStore,
+		metrics:          metricsCollector,
+		subscriptions:    subscriptionsSvc,
 		logger:           appLogger,
 	}
 
@@ -212,6 +216,18 @@ func ConfigureRouter(router chi.Router, cfg *config.Config, paywallSvc *paywall.
 
 		// API v1 - Coupon validation endpoint
 		r.Post(prefix+"/paywall/v1/coupons/validate", handler.validateCoupon)
+
+		// API v1 - Subscription endpoints (matches frontend BACKEND_SUBSCRIPTION_API.md spec)
+		r.Get(prefix+"/paywall/v1/subscription/status", handler.getSubscriptionStatus)
+		r.With(idempotencyMW).Post(prefix+"/paywall/v1/subscription/stripe-session", handler.createStripeSubscription)
+		r.With(idempotencyMW).Post(prefix+"/paywall/v1/subscription/quote", handler.getSubscriptionQuote)
+		// Subscription management endpoints
+		r.Post(prefix+"/paywall/v1/subscription/cancel", handler.cancelSubscription)
+		r.Post(prefix+"/paywall/v1/subscription/portal", handler.getBillingPortal)
+		r.With(idempotencyMW).Post(prefix+"/paywall/v1/subscription/x402/activate", handler.createX402Subscription)
+		// Upgrade/downgrade/reactivate endpoints
+		r.With(idempotencyMW).Post(prefix+"/paywall/v1/subscription/change", handler.changeSubscription)
+		r.Post(prefix+"/paywall/v1/subscription/reactivate", handler.reactivateSubscription)
 	})
 }
 

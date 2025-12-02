@@ -25,8 +25,26 @@ type Product struct {
 	Metadata      map[string]string // Custom key-value pairs
 	Active        bool              // Enable/disable product
 
+	// Subscription configuration (nil = one-time purchase only)
+	Subscription *SubscriptionConfig
+
 	CreatedAt time.Time // Creation timestamp
 	UpdatedAt time.Time // Last update timestamp
+}
+
+// SubscriptionConfig defines subscription billing for a product.
+type SubscriptionConfig struct {
+	BillingPeriod    string `json:"billingPeriod" yaml:"billing_period"`       // "day", "week", "month", "year"
+	BillingInterval  int    `json:"billingInterval" yaml:"billing_interval"`   // e.g., 1 for monthly, 3 for quarterly
+	TrialDays        int    `json:"trialDays,omitempty" yaml:"trial_days"`     // Free trial period in days
+	StripePriceID    string `json:"stripePriceId,omitempty" yaml:"stripe_price_id"` // Stripe recurring price ID
+	AllowX402        bool   `json:"allowX402" yaml:"allow_x402"`               // Allow x402 payments for subscription
+	GracePeriodHours int    `json:"gracePeriodHours" yaml:"grace_period_hours"` // Hours after expiry before blocking
+}
+
+// IsSubscription returns true if this product requires a subscription.
+func (p Product) IsSubscription() bool {
+	return p.Subscription != nil && p.Subscription.BillingPeriod != ""
 }
 
 // Repository defines the interface for product storage.

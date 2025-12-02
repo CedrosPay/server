@@ -196,6 +196,27 @@ export MONITORING_LOW_BALANCE_THRESHOLD="0.005"
 export MONITORING_CHECK_INTERVAL="5m"
 ```
 
+## Subscriptions Configuration
+
+| Environment Variable | CEDROS Variant | Type | Default | Description |
+|---------------------|----------------|------|---------|-------------|
+| `SUBSCRIPTIONS_ENABLED` | `CEDROS_SUBSCRIPTIONS_ENABLED` | boolean | `false` | Enable subscription support |
+| `SUBSCRIPTIONS_BACKEND` | `CEDROS_SUBSCRIPTIONS_BACKEND` | string | `memory` | `memory` or `postgres` |
+| `SUBSCRIPTIONS_POSTGRES_URL` | `CEDROS_SUBSCRIPTIONS_POSTGRES_URL` | string | - | PostgreSQL connection URL |
+| `SUBSCRIPTIONS_GRACE_PERIOD_HOURS` | `CEDROS_SUBSCRIPTIONS_GRACE_PERIOD_HOURS` | int | `24` | Grace period after payment failure |
+
+### Examples
+
+```bash
+# Enable subscriptions with PostgreSQL storage
+export CEDROS_SUBSCRIPTIONS_ENABLED="true"
+export CEDROS_SUBSCRIPTIONS_BACKEND="postgres"
+export CEDROS_SUBSCRIPTIONS_POSTGRES_URL="postgresql://user:pass@db:5432/subscriptions?sslmode=require"
+
+# Increase grace period to 48 hours
+export CEDROS_SUBSCRIPTIONS_GRACE_PERIOD_HOURS="48"
+```
+
 ## Storage Configuration
 
 Environment variables for storage backends are defined in YAML but can be overridden via:

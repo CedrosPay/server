@@ -13,11 +13,19 @@ var ErrStripeSessionPending = errors.New("paywall: stripe session pending")
 
 // AuthorizationResult captures the outcome of an access attempt.
 type AuthorizationResult struct {
-	Granted    bool
-	Method     string
-	Wallet     string
-	Quote      *Quote
-	Settlement *SettlementResponse
+	Granted      bool
+	Method       string
+	Wallet       string
+	Quote        *Quote
+	Settlement   *SettlementResponse
+	Subscription *SubscriptionInfo // Present when access granted via subscription
+}
+
+// SubscriptionInfo contains subscription details when access is granted via subscription.
+type SubscriptionInfo struct {
+	ID               string    `json:"id"`
+	Status           string    `json:"status"`
+	CurrentPeriodEnd time.Time `json:"currentPeriodEnd"`
 }
 
 // Quote contains the pricing metadata shared with the caller.

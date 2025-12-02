@@ -38,7 +38,8 @@ func isUSDPegged(assetCode string) bool {
 //	Step 3: Apply $1 + $0.50 = $1.50 off: $7.20 - $1.50 = $5.70
 //
 // All arithmetic is done using int64 atomic units to avoid floating-point errors.
-func StackCouponsOnMoney(originalPrice money.Money, applicableCoupons []coupons.Coupon) (money.Money, error) {
+// The roundingMode parameter controls how fractional cents are rounded.
+func StackCouponsOnMoney(originalPrice money.Money, applicableCoupons []coupons.Coupon, roundingMode money.RoundingMode) (money.Money, error) {
 	if len(applicableCoupons) == 0 {
 		return originalPrice, nil
 	}
@@ -49,8 +50,8 @@ func StackCouponsOnMoney(originalPrice money.Money, applicableCoupons []coupons.
 	// Single pass: apply percentage coupons and accumulate fixed discounts
 	for _, coupon := range applicableCoupons {
 		if coupon.DiscountType == coupons.DiscountTypePercentage {
-			// Apply percentage discount using precise integer arithmetic
-			discounted, err := price.ApplyPercentageDiscount(coupon.DiscountValue)
+			// Apply percentage discount using precise integer arithmetic with configured rounding
+			discounted, err := price.ApplyPercentageDiscountWithRounding(coupon.DiscountValue, roundingMode)
 			if err != nil {
 				return money.Money{}, err
 			}

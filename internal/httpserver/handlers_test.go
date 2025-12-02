@@ -12,7 +12,8 @@ import (
 	"github.com/CedrosPay/server/internal/config"
 )
 
-// TestHealthEndpoint verifies the health check endpoint returns 200 OK
+// TestHealthEndpoint verifies the health check endpoint returns appropriate status
+// Without a verifier, the health check returns "degraded" (503) since RPC connectivity cannot be verified
 func TestHealthEndpoint(t *testing.T) {
 	h := &handlers{
 		cfg: &config.Config{},
@@ -23,8 +24,9 @@ func TestHealthEndpoint(t *testing.T) {
 
 	h.health(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rec.Code)
+	// Without a verifier, RPC health check fails, so expect degraded status (503)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected status 503 (degraded without verifier), got %d", rec.Code)
 	}
 
 	var response map[string]interface{}
@@ -32,8 +34,9 @@ func TestHealthEndpoint(t *testing.T) {
 		t.Fatalf("failed to parse response: %v", err)
 	}
 
-	if response["status"] != "ok" {
-		t.Errorf("expected status 'ok', got %v", response["status"])
+	// Without a verifier, status should be "degraded"
+	if response["status"] != "degraded" {
+		t.Errorf("expected status 'degraded' without verifier, got %v", response["status"])
 	}
 }
 
@@ -220,13 +223,13 @@ func TestRouterSetup(t *testing.T) {
 	router.Get("/.well-known/agent.json", handler.agentCard)
 	router.Get("/openapi.json", handler.openAPISpec)
 
-	// Test health endpoint
+	// Test health endpoint - without verifier, expect degraded status (503)
 	req := httptest.NewRequest("GET", "/cedros-health", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("health endpoint: expected 200, got %d", rec.Code)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("health endpoint: expected 503 (degraded without verifier), got %d", rec.Code)
 	}
 
 	// Test agent card endpoint

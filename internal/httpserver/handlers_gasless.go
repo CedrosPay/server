@@ -189,7 +189,8 @@ func (h *handlers) buildGaslessTransaction(w http.ResponseWriter, r *http.Reques
 
 		// Apply stacked coupons using precise Money arithmetic (percentage first, then fixed)
 		if len(applicableCoupons) > 0 {
-			cryptoMoney, err = paywall.StackCouponsOnMoney(cryptoMoney, applicableCoupons)
+			roundingMode := money.ParseRoundingMode(h.cfg.X402.RoundingMode)
+			cryptoMoney, err = paywall.StackCouponsOnMoney(cryptoMoney, applicableCoupons, roundingMode)
 			if err != nil {
 				respondError(w, http.StatusInternalServerError, fmt.Sprintf("apply coupons: %v", err))
 				return
